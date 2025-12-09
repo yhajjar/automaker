@@ -103,9 +103,12 @@ export function Sidebar() {
         setCurrentProject(project);
 
         if (initResult.createdFiles && initResult.createdFiles.length > 0) {
-          toast.success(initResult.isNewProject ? "Project initialized" : "Project updated", {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
-          });
+          toast.success(
+            initResult.isNewProject ? "Project initialized" : "Project updated",
+            {
+              description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
+            }
+          );
         } else {
           toast.success("Project opened", {
             description: `Opened ${name}`,
@@ -124,28 +127,56 @@ export function Sidebar() {
     {
       label: "Project",
       items: [
-        { id: "board", label: "Kanban Board", icon: LayoutGrid, shortcut: NAV_SHORTCUTS.board },
-        { id: "agent", label: "Agent Runner", icon: Bot, shortcut: NAV_SHORTCUTS.agent },
+        {
+          id: "board",
+          label: "Kanban Board",
+          icon: LayoutGrid,
+          shortcut: NAV_SHORTCUTS.board,
+        },
+        {
+          id: "agent",
+          label: "Agent Runner",
+          icon: Bot,
+          shortcut: NAV_SHORTCUTS.agent,
+        },
       ],
     },
     {
       label: "Tools",
       items: [
-        { id: "spec", label: "Spec Editor", icon: FileText, shortcut: NAV_SHORTCUTS.spec },
-        { id: "context", label: "Context", icon: BookOpen, shortcut: NAV_SHORTCUTS.context },
-        { id: "tools", label: "Agent Tools", icon: Wrench, shortcut: NAV_SHORTCUTS.tools },
+        {
+          id: "spec",
+          label: "Spec Editor",
+          icon: FileText,
+          shortcut: NAV_SHORTCUTS.spec,
+        },
+        {
+          id: "context",
+          label: "Context",
+          icon: BookOpen,
+          shortcut: NAV_SHORTCUTS.context,
+        },
+        {
+          id: "tools",
+          label: "Agent Tools",
+          icon: Wrench,
+          shortcut: NAV_SHORTCUTS.tools,
+        },
       ],
     },
   ];
 
   // Handler for selecting a project by number key
-  const selectProjectByNumber = useCallback((num: number) => {
-    const projectIndex = num - 1;
-    if (projectIndex >= 0 && projectIndex < projects.length) {
-      setCurrentProject(projects[projectIndex]);
-      setIsProjectPickerOpen(false);
-    }
-  }, [projects, setCurrentProject]);
+  const selectProjectByNumber = useCallback(
+    (num: number) => {
+      const projectIndex = num - 1;
+      if (projectIndex >= 0 && projectIndex < projects.length) {
+        setCurrentProject(projects[projectIndex]);
+        setIsProjectPickerOpen(false);
+      }
+    },
+    [projects, setCurrentProject]
+  );
 
   // Handle number key presses when project picker is open
   useEffect(() => {
@@ -215,7 +246,13 @@ export function Sidebar() {
     }
 
     return shortcuts;
-  }, [currentProject, setCurrentView, toggleSidebar, projects.length, handleOpenFolder]);
+  }, [
+    currentProject,
+    setCurrentView,
+    toggleSidebar,
+    projects.length,
+    handleOpenFolder,
+  ]);
 
   // Register keyboard shortcuts
   useKeyboardShortcuts(navigationShortcuts);
@@ -232,36 +269,37 @@ export function Sidebar() {
       )}
       data-testid="sidebar"
     >
-      {/* Floating Collapse Toggle Button - Desktop only */}
-      <div className="hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3 z-50 group/toggle">
-        <button
-          onClick={toggleSidebar}
-          className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-700 hover:border-white/20 transition-all shadow-lg titlebar-no-drag"
-          data-testid="sidebar-collapse-button"
-        >
-          {sidebarOpen ? (
-            <PanelLeftClose className="w-3.5 h-3.5" />
-          ) : (
-            <PanelLeft className="w-3.5 h-3.5" />
-          )}
-        </button>
+      {/* Floating Collapse Toggle Button - Desktop only - At border intersection */}
+      <button
+        onClick={toggleSidebar}
+        className="hidden lg:flex absolute top-[68px] -right-3 z-[9999] group/toggle items-center justify-center w-6 h-6 rounded-full bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-700 hover:border-white/20 transition-all shadow-lg titlebar-no-drag"
+        data-testid="sidebar-collapse-button"
+      >
+        {sidebarOpen ? (
+          <PanelLeftClose className="w-3.5 h-3.5 pointer-events-none" />
+        ) : (
+          <PanelLeft className="w-3.5 h-3.5 pointer-events-none" />
+        )}
         {/* Tooltip */}
         <div
           className="absolute left-full ml-2 px-2 py-1 bg-zinc-800 text-white text-xs rounded opacity-0 group-hover/toggle:opacity-100 transition-opacity whitespace-nowrap z-50 border border-zinc-700 pointer-events-none"
           data-testid="sidebar-toggle-tooltip"
         >
           {sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}{" "}
-          <span className="ml-1 px-1 py-0.5 bg-white/10 rounded text-[10px] font-mono" data-testid="sidebar-toggle-shortcut">
+          <span
+            className="ml-1 px-1 py-0.5 bg-white/10 rounded text-[10px] font-mono"
+            data-testid="sidebar-toggle-shortcut"
+          >
             {UI_SHORTCUTS.toggleSidebar}
           </span>
         </div>
-      </div>
+      </button>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Logo */}
         <div
           className={cn(
-            "h-20 pt-8 flex items-center justify-between border-b border-zinc-800 flex-shrink-0 titlebar-drag-region",
+            "h-20 pt-8 flex items-center justify-center border-b border-zinc-800 flex-shrink-0 titlebar-drag-region",
             sidebarOpen ? "px-3 lg:px-6" : "px-3"
           )}
         >
@@ -282,34 +320,46 @@ export function Sidebar() {
               Auto<span className="text-brand-500">maker</span>
             </span>
           </div>
-
-          {/* Project Actions */}
-          {sidebarOpen && (
-            <div className="flex items-center gap-1 titlebar-no-drag">
-              <button
-                onClick={() => setCurrentView("welcome")}
-                className="group flex items-center justify-center w-8 h-8 rounded-lg relative overflow-hidden transition-all text-zinc-400 hover:text-white hover:bg-white/5"
-                title="New Project"
-                data-testid="new-project-button"
-              >
-                <Plus className="w-4 h-4 flex-shrink-0" />
-              </button>
-              <button
-                onClick={handleOpenFolder}
-                className="group flex items-center justify-center w-8 h-8 rounded-lg relative overflow-hidden transition-all text-zinc-400 hover:text-white hover:bg-white/5"
-                title={`Open Folder (${ACTION_SHORTCUTS.openProject})`}
-                data-testid="open-project-button"
-              >
-                <FolderOpen className="w-4 h-4 flex-shrink-0" />
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Project Actions - Moved above project selector */}
+        {sidebarOpen && (
+          <div className="flex items-center gap-2 titlebar-no-drag px-2 mt-3">
+            <button
+              onClick={() => setCurrentView("welcome")}
+              className="group flex items-center justify-center flex-1 px-3 py-2.5 rounded-lg relative overflow-hidden transition-all text-zinc-400 hover:text-white hover:bg-white/5 border border-white/10"
+              title="New Project"
+              data-testid="new-project-button"
+            >
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span className="ml-2 text-sm font-medium hidden lg:block whitespace-nowrap">
+                New
+              </span>
+            </button>
+            <button
+              onClick={handleOpenFolder}
+              className="group flex items-center justify-center flex-1 px-3 py-2.5 rounded-lg relative overflow-hidden transition-all text-zinc-400 hover:text-white hover:bg-white/5 border border-white/10"
+              title={`Open Folder (${ACTION_SHORTCUTS.openProject})`}
+              data-testid="open-project-button"
+            >
+              <FolderOpen className="w-4 h-4 flex-shrink-0" />
+              <span className="ml-2 text-sm font-medium hidden lg:block whitespace-nowrap">
+                Open
+              </span>
+              <span className="hidden lg:flex items-center justify-center w-5 h-5 text-[10px] font-mono rounded bg-white/5 border border-white/10 text-zinc-500 ml-2">
+                {ACTION_SHORTCUTS.openProject}
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Project Selector */}
         {sidebarOpen && projects.length > 0 && (
           <div className="px-2 mt-3">
-            <DropdownMenu open={isProjectPickerOpen} onOpenChange={setIsProjectPickerOpen}>
+            <DropdownMenu
+              open={isProjectPickerOpen}
+              onOpenChange={setIsProjectPickerOpen}
+            >
               <DropdownMenuTrigger asChild>
                 <button
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white titlebar-no-drag"
@@ -366,7 +416,6 @@ export function Sidebar() {
             </DropdownMenu>
           </div>
         )}
-
 
         {/* Nav Items - Scrollable */}
         <nav className="flex-1 overflow-y-auto px-2 mt-4 pb-2">
@@ -438,7 +487,8 @@ export function Sidebar() {
                           <span
                             className={cn(
                               "hidden lg:flex items-center justify-center w-5 h-5 text-[10px] font-mono rounded bg-white/5 border border-white/10 text-zinc-500",
-                              isActive && "bg-brand-500/10 border-brand-500/20 text-brand-400"
+                              isActive &&
+                                "bg-brand-500/10 border-brand-500/20 text-brand-400"
                             )}
                             data-testid={`shortcut-${item.id}`}
                           >
@@ -503,7 +553,8 @@ export function Sidebar() {
               <span
                 className={cn(
                   "hidden lg:flex items-center justify-center w-5 h-5 text-[10px] font-mono rounded bg-white/5 border border-white/10 text-zinc-500",
-                  isActiveRoute("settings") && "bg-brand-500/10 border-brand-500/20 text-brand-400"
+                  isActiveRoute("settings") &&
+                    "bg-brand-500/10 border-brand-500/20 text-brand-400"
                 )}
                 data-testid="shortcut-settings"
               >
@@ -517,7 +568,6 @@ export function Sidebar() {
             )}
           </button>
         </div>
-
       </div>
     </aside>
   );

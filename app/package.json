@@ -2,6 +2,7 @@
   "name": "automaker",
   "version": "0.1.0",
   "private": true,
+  "license": "Unlicense",
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -p 3007",
