@@ -188,9 +188,12 @@ export const KanbanCard = memo(function KanbanCard({
   // Dragging logic:
   // - Backlog items can always be dragged
   // - skipTests items can be dragged even when in_progress or verified (unless currently running)
+  // - waiting_approval items can always be dragged (to allow manual verification via drag)
   // - Non-skipTests (TDD) items in progress or verified cannot be dragged
   const isDraggable =
-    feature.status === "backlog" || (feature.skipTests && !isCurrentAutoTask);
+    feature.status === "backlog" ||
+    feature.status === "waiting_approval" ||
+    (feature.skipTests && !isCurrentAutoTask);
   const {
     attributes,
     listeners,
@@ -336,7 +339,7 @@ export const KanbanCard = memo(function KanbanCard({
                   <Edit className="w-3 h-3 mr-2" />
                   Edit
                 </DropdownMenuItem>
-                {onViewOutput && (
+                {onViewOutput && feature.status !== "backlog" && (
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
@@ -733,25 +736,6 @@ export const KanbanCard = memo(function KanbanCard({
                 >
                   <GitCommit className="w-3 h-3 mr-1" />
                   Commit
-                </Button>
-              )}
-            </>
-          )}
-          {!isCurrentAutoTask && feature.status === "backlog" && (
-            <>
-              {onViewOutput && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewOutput();
-                  }}
-                  data-testid={`view-logs-backlog-${feature.id}`}
-                >
-                  <FileText className="w-3 h-3 mr-1" />
-                  Logs
                 </Button>
               )}
             </>

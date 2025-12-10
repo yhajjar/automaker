@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import {
@@ -39,6 +39,7 @@ import {
   Atom,
   Radio,
   Monitor,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -107,15 +108,15 @@ interface NavItem {
 // Sortable Project Item Component
 interface SortableProjectItemProps {
   project: Project;
-  index: number;
   currentProjectId: string | undefined;
+  isHighlighted: boolean;
   onSelect: (project: Project) => void;
 }
 
 function SortableProjectItem({
   project,
-  index,
   currentProjectId,
+  isHighlighted,
   onSelect,
 }: SortableProjectItemProps) {
   const {
@@ -139,7 +140,8 @@ function SortableProjectItem({
       style={style}
       className={cn(
         "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent",
-        isDragging && "bg-accent shadow-lg"
+        isDragging && "bg-accent shadow-lg",
+        isHighlighted && "bg-brand-500/10 text-foreground"
       )}
       data-testid={`project-option-${project.id}`}
     >
@@ -153,16 +155,6 @@ function SortableProjectItem({
       >
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
-
-      {/* Hotkey indicator */}
-      {index < 9 && (
-        <span
-          className="flex items-center justify-center w-5 h-5 text-[10px] font-mono rounded bg-brand-500/10 border border-brand-500/30 text-brand-400/70"
-          data-testid={`project-hotkey-${index + 1}`}
-        >
-          {index + 1}
-        </span>
-      )}
 
       {/* Project content - clickable area */}
       <div
@@ -224,6 +216,8 @@ export function Sidebar() {
 
   // State for project picker dropdown
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
+  const [selectedProjectIndex, setSelectedProjectIndex] = useState(0);
   const [showTrashDialog, setShowTrashDialog] = useState(false);
   const [activeTrashId, setActiveTrashId] = useState<string | null>(null);
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
@@ -238,6 +232,43 @@ export function Sidebar() {
   >(null);
   const [generateFeatures, setGenerateFeatures] = useState(true);
   const [showSpecIndicator, setShowSpecIndicator] = useState(true);
+
+  // Ref for project search input
+  const projectSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Filtered projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) {
+      return projects;
+    }
+    const query = projectSearchQuery.toLowerCase();
+    return projects.filter((project) =>
+      project.name.toLowerCase().includes(query)
+    );
+  }, [projects, projectSearchQuery]);
+
+  // Reset selection when filtered results change
+  useEffect(() => {
+    setSelectedProjectIndex(0);
+  }, [filteredProjects.length, projectSearchQuery]);
+
+  // Reset search query when dropdown closes
+  useEffect(() => {
+    if (!isProjectPickerOpen) {
+      setProjectSearchQuery("");
+      setSelectedProjectIndex(0);
+    }
+  }, [isProjectPickerOpen]);
+
+  // Focus the search input when dropdown opens
+  useEffect(() => {
+    if (isProjectPickerOpen) {
+      // Small delay to ensure the dropdown is rendered
+      setTimeout(() => {
+        projectSearchInputRef.current?.focus();
+      }, 0);
+    }
+  }, [isProjectPickerOpen]);
 
   // Sensors for drag-and-drop
   const sensors = useSensors(
@@ -538,39 +569,45 @@ export function Sidebar() {
     },
   ];
 
-  // Handler for selecting a project by number key
-  const selectProjectByNumber = useCallback(
-    (num: number) => {
-      const projectIndex = num - 1;
-      if (projectIndex >= 0 && projectIndex < projects.length) {
-        setCurrentProject(projects[projectIndex]);
-        setIsProjectPickerOpen(false);
-      }
-    },
-    [projects, setCurrentProject]
-  );
+  // Handle selecting the currently highlighted project
+  const selectHighlightedProject = useCallback(() => {
+    if (filteredProjects.length > 0 && selectedProjectIndex < filteredProjects.length) {
+      setCurrentProject(filteredProjects[selectedProjectIndex]);
+      setIsProjectPickerOpen(false);
+    }
+  }, [filteredProjects, selectedProjectIndex, setCurrentProject]);
 
   // Handle keyboard events when project picker is open
   useEffect(() => {
     if (!isProjectPickerOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      const num = parseInt(event.key, 10);
-      if (num >= 1 && num <= 9) {
-        event.preventDefault();
-        selectProjectByNumber(num);
-      } else if (event.key === "Escape") {
+      if (event.key === "Escape") {
         setIsProjectPickerOpen(false);
-      } else if (event.key.toLowerCase() === "p") {
-        // Toggle off when P is pressed while dropdown is open
+      } else if (event.key === "Enter") {
         event.preventDefault();
-        setIsProjectPickerOpen(false);
+        selectHighlightedProject();
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedProjectIndex((prev) =>
+          prev < filteredProjects.length - 1 ? prev + 1 : prev
+        );
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedProjectIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      } else if (event.key.toLowerCase() === "p" && !event.metaKey && !event.ctrlKey) {
+        // Toggle off when P is pressed (not with modifiers) while dropdown is open
+        // Only if not typing in the search input
+        if (document.activeElement !== projectSearchInputRef.current) {
+          event.preventDefault();
+          setIsProjectPickerOpen(false);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProjectPickerOpen, selectProjectByNumber]);
+  }, [isProjectPickerOpen, selectHighlightedProject, filteredProjects.length]);
 
   // Build keyboard shortcuts for navigation
   const navigationShortcuts: KeyboardShortcut[] = useMemo(() => {
@@ -796,29 +833,58 @@ export function Sidebar() {
                 align="start"
                 data-testid="project-picker-dropdown"
               >
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={projects.map((p) => p.id)}
-                    strategy={verticalListSortingStrategy}
+                {/* Search input for type-ahead filtering */}
+                <div className="px-2 pb-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      ref={projectSearchInputRef}
+                      type="text"
+                      placeholder="Search projects..."
+                      value={projectSearchQuery}
+                      onChange={(e) => setProjectSearchQuery(e.target.value)}
+                      className="w-full h-8 pl-7 pr-2 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+                      data-testid="project-search-input"
+                    />
+                  </div>
+                </div>
+
+                {filteredProjects.length === 0 ? (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    No projects found
+                  </div>
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    {projects.map((project, index) => (
-                      <SortableProjectItem
-                        key={project.id}
-                        project={project}
-                        index={index}
-                        currentProjectId={currentProject?.id}
-                        onSelect={(p) => {
-                          setCurrentProject(p);
-                          setIsProjectPickerOpen(false);
-                        }}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
+                    <SortableContext
+                      items={filteredProjects.map((p) => p.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {filteredProjects.map((project, index) => (
+                        <SortableProjectItem
+                          key={project.id}
+                          project={project}
+                          currentProjectId={currentProject?.id}
+                          isHighlighted={index === selectedProjectIndex}
+                          onSelect={(p) => {
+                            setCurrentProject(p);
+                            setIsProjectPickerOpen(false);
+                          }}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                )}
+
+                {/* Keyboard hint */}
+                <div className="px-2 pt-2 mt-1 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    ↑↓ navigate • Enter select • Esc close
+                  </p>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 

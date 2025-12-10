@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import { Check, ChevronDown } from "lucide-react";
@@ -29,6 +30,7 @@ export function CategoryAutocomplete({
   const [inputValue, setInputValue] = useState(value);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -52,12 +54,39 @@ export function CategoryAutocomplete({
     setHighlightedIndex(-1);
   }, [inputValue, suggestions]);
 
+  // Update dropdown position when open and handle scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (isOpen && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    };
+
+    updatePosition();
+
+    if (isOpen) {
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
+      };
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        !containerRef.current.contains(event.target as Node) &&
+        listRef.current &&
+        !listRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
@@ -175,40 +204,47 @@ export function CategoryAutocomplete({
         </button>
       </div>
 
-      {isOpen && filteredSuggestions.length > 0 && (
-        <ul
-          ref={listRef}
-          className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-background p-1 shadow-md animate-in fade-in-0 zoom-in-95"
-          role="listbox"
-          data-testid="category-autocomplete-list"
-        >
-          {filteredSuggestions.map((suggestion, index) => (
-            <li
-              key={suggestion}
-              role="option"
-              aria-selected={highlightedIndex === index}
-              className={cn(
-                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-                highlightedIndex === index && "bg-accent text-accent-foreground",
-                inputValue === suggestion && "font-medium"
-              )}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSelect(suggestion);
-              }}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              data-testid={`category-option-${suggestion.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              {inputValue === suggestion && (
-                <Check className="mr-2 h-4 w-4 text-primary" />
-              )}
-              <span className={cn(inputValue !== suggestion && "ml-6")}>
-                {suggestion}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {isOpen && filteredSuggestions.length > 0 && typeof document !== "undefined" &&
+        createPortal(
+          <ul
+            ref={listRef}
+            className="fixed z-[9999] max-h-60 overflow-auto rounded-md border bg-background p-1 shadow-md animate-in fade-in-0 zoom-in-95"
+            role="listbox"
+            data-testid="category-autocomplete-list"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
+            {filteredSuggestions.map((suggestion, index) => (
+              <li
+                key={suggestion}
+                role="option"
+                aria-selected={highlightedIndex === index}
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                  highlightedIndex === index && "bg-accent text-accent-foreground",
+                  inputValue === suggestion && "font-medium"
+                )}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(suggestion);
+                }}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                data-testid={`category-option-${suggestion.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                {inputValue === suggestion && (
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                )}
+                <span className={cn(inputValue !== suggestion && "ml-6")}>
+                  {suggestion}
+                </span>
+              </li>
+            ))}
+          </ul>,
+          document.body
+        )}
     </div>
   );
 }

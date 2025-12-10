@@ -1727,3 +1727,528 @@
 .titlebar-no-drag {
   -webkit-app-region: no-drag;
 }
+
+/* ========================================
+   XML SYNTAX HIGHLIGHTING
+   Theme-aware colors for XML editor
+   ======================================== */
+
+/* Light theme - professional and readable */
+.light .xml-highlight {
+  color: oklch(0.3 0 0); /* Default text */
+}
+
+.light .xml-tag-bracket {
+  color: oklch(0.45 0.15 250); /* Blue-gray for < > */
+}
+
+.light .xml-tag-name {
+  color: oklch(0.45 0.22 25); /* Red/maroon for tag names */
+}
+
+.light .xml-attribute-name {
+  color: oklch(0.45 0.18 280); /* Purple for attributes */
+}
+
+.light .xml-attribute-equals {
+  color: oklch(0.4 0 0); /* Dark gray for = */
+}
+
+.light .xml-attribute-value {
+  color: oklch(0.45 0.18 145); /* Green for string values */
+}
+
+.light .xml-comment {
+  color: oklch(0.55 0.05 100); /* Muted olive for comments */
+  font-style: italic;
+}
+
+.light .xml-cdata {
+  color: oklch(0.5 0.1 200); /* Teal for CDATA */
+}
+
+.light .xml-doctype {
+  color: oklch(0.5 0.15 280); /* Purple for DOCTYPE */
+}
+
+.light .xml-text {
+  color: oklch(0.25 0 0); /* Near-black for text content */
+}
+
+/* Dark theme - high contrast */
+.dark .xml-highlight {
+  color: oklch(0.9 0 0); /* Default light text */
+}
+
+.dark .xml-tag-bracket {
+  color: oklch(0.7 0.12 220); /* Soft blue for < > */
+}
+
+.dark .xml-tag-name {
+  color: oklch(0.75 0.2 25); /* Coral/salmon for tag names */
+}
+
+.dark .xml-attribute-name {
+  color: oklch(0.8 0.15 280); /* Light purple for attributes */
+}
+
+.dark .xml-attribute-equals {
+  color: oklch(0.6 0 0); /* Gray for = */
+}
+
+.dark .xml-attribute-value {
+  color: oklch(0.8 0.18 145); /* Bright green for strings */
+}
+
+.dark .xml-comment {
+  color: oklch(0.55 0.05 100); /* Muted for comments */
+  font-style: italic;
+}
+
+.dark .xml-cdata {
+  color: oklch(0.7 0.12 200); /* Teal for CDATA */
+}
+
+.dark .xml-doctype {
+  color: oklch(0.7 0.15 280); /* Purple for DOCTYPE */
+}
+
+.dark .xml-text {
+  color: oklch(0.85 0 0); /* Off-white for text */
+}
+
+/* Retro theme - neon green on black */
+.retro .xml-highlight {
+  color: oklch(0.85 0.25 145); /* Neon green default */
+}
+
+.retro .xml-tag-bracket {
+  color: oklch(0.8 0.25 200); /* Cyan for brackets */
+}
+
+.retro .xml-tag-name {
+  color: oklch(0.85 0.25 145); /* Bright green for tags */
+  text-shadow: 0 0 5px oklch(0.85 0.25 145 / 0.5);
+}
+
+.retro .xml-attribute-name {
+  color: oklch(0.8 0.25 300); /* Purple neon for attrs */
+}
+
+.retro .xml-attribute-equals {
+  color: oklch(0.6 0.15 145); /* Dim green for = */
+}
+
+.retro .xml-attribute-value {
+  color: oklch(0.8 0.25 60); /* Yellow neon for strings */
+}
+
+.retro .xml-comment {
+  color: oklch(0.5 0.15 145); /* Dim green for comments */
+  font-style: italic;
+}
+
+.retro .xml-cdata {
+  color: oklch(0.75 0.2 200); /* Cyan for CDATA */
+}
+
+.retro .xml-doctype {
+  color: oklch(0.75 0.2 300); /* Purple for DOCTYPE */
+}
+
+.retro .xml-text {
+  color: oklch(0.7 0.2 145); /* Green text */
+}
+
+/* Dracula theme */
+.dracula .xml-highlight {
+  color: oklch(0.95 0.01 280); /* #f8f8f2 */
+}
+
+.dracula .xml-tag-bracket {
+  color: oklch(0.7 0.25 350); /* Pink #ff79c6 */
+}
+
+.dracula .xml-tag-name {
+  color: oklch(0.7 0.25 350); /* Pink for tags */
+}
+
+.dracula .xml-attribute-name {
+  color: oklch(0.8 0.2 130); /* Green #50fa7b */
+}
+
+.dracula .xml-attribute-equals {
+  color: oklch(0.95 0.01 280); /* White */
+}
+
+.dracula .xml-attribute-value {
+  color: oklch(0.85 0.2 90); /* Yellow #f1fa8c */
+}
+
+.dracula .xml-comment {
+  color: oklch(0.55 0.08 280); /* #6272a4 */
+  font-style: italic;
+}
+
+.dracula .xml-cdata {
+  color: oklch(0.75 0.2 180); /* Cyan */
+}
+
+.dracula .xml-doctype {
+  color: oklch(0.7 0.2 320); /* Purple #bd93f9 */
+}
+
+.dracula .xml-text {
+  color: oklch(0.95 0.01 280); /* White */
+}
+
+/* Nord theme */
+.nord .xml-highlight {
+  color: oklch(0.9 0.01 230); /* #eceff4 */
+}
+
+.nord .xml-tag-bracket {
+  color: oklch(0.65 0.14 220); /* #81a1c1 */
+}
+
+.nord .xml-tag-name {
+  color: oklch(0.65 0.14 220); /* Frost blue for tags */
+}
+
+.nord .xml-attribute-name {
+  color: oklch(0.7 0.12 220); /* #88c0d0 */
+}
+
+.nord .xml-attribute-equals {
+  color: oklch(0.75 0.02 230); /* Dim white */
+}
+
+.nord .xml-attribute-value {
+  color: oklch(0.7 0.15 140); /* #a3be8c green */
+}
+
+.nord .xml-comment {
+  color: oklch(0.5 0.04 230); /* Dim text */
+  font-style: italic;
+}
+
+.nord .xml-cdata {
+  color: oklch(0.7 0.12 220); /* Frost blue */
+}
+
+.nord .xml-doctype {
+  color: oklch(0.7 0.2 320); /* #b48ead purple */
+}
+
+.nord .xml-text {
+  color: oklch(0.9 0.01 230); /* Snow white */
+}
+
+/* Monokai theme */
+.monokai .xml-highlight {
+  color: oklch(0.95 0.02 100); /* #f8f8f2 */
+}
+
+.monokai .xml-tag-bracket {
+  color: oklch(0.95 0.02 100); /* White */
+}
+
+.monokai .xml-tag-name {
+  color: oklch(0.8 0.2 350); /* #f92672 pink */
+}
+
+.monokai .xml-attribute-name {
+  color: oklch(0.8 0.2 140); /* #a6e22e green */
+}
+
+.monokai .xml-attribute-equals {
+  color: oklch(0.95 0.02 100); /* White */
+}
+
+.monokai .xml-attribute-value {
+  color: oklch(0.85 0.2 90); /* #e6db74 yellow */
+}
+
+.monokai .xml-comment {
+  color: oklch(0.55 0.04 100); /* #75715e */
+  font-style: italic;
+}
+
+.monokai .xml-cdata {
+  color: oklch(0.75 0.2 200); /* Cyan #66d9ef */
+}
+
+.monokai .xml-doctype {
+  color: oklch(0.75 0.2 200); /* Cyan */
+}
+
+.monokai .xml-text {
+  color: oklch(0.95 0.02 100); /* White */
+}
+
+/* Tokyo Night theme */
+.tokyonight .xml-highlight {
+  color: oklch(0.85 0.02 250); /* #a9b1d6 */
+}
+
+.tokyonight .xml-tag-bracket {
+  color: oklch(0.65 0.2 15); /* #f7768e red */
+}
+
+.tokyonight .xml-tag-name {
+  color: oklch(0.65 0.2 15); /* Red for tags */
+}
+
+.tokyonight .xml-attribute-name {
+  color: oklch(0.7 0.2 320); /* #bb9af7 purple */
+}
+
+.tokyonight .xml-attribute-equals {
+  color: oklch(0.75 0.02 250); /* Dim text */
+}
+
+.tokyonight .xml-attribute-value {
+  color: oklch(0.75 0.18 140); /* #9ece6a green */
+}
+
+.tokyonight .xml-comment {
+  color: oklch(0.5 0.04 250); /* #565f89 */
+  font-style: italic;
+}
+
+.tokyonight .xml-cdata {
+  color: oklch(0.75 0.18 200); /* #7dcfff cyan */
+}
+
+.tokyonight .xml-doctype {
+  color: oklch(0.7 0.18 280); /* #7aa2f7 blue */
+}
+
+.tokyonight .xml-text {
+  color: oklch(0.85 0.02 250); /* Text color */
+}
+
+/* Solarized theme */
+.solarized .xml-highlight {
+  color: oklch(0.75 0.02 90); /* #839496 */
+}
+
+.solarized .xml-tag-bracket {
+  color: oklch(0.65 0.15 220); /* #268bd2 blue */
+}
+
+.solarized .xml-tag-name {
+  color: oklch(0.65 0.15 220); /* Blue for tags */
+}
+
+.solarized .xml-attribute-name {
+  color: oklch(0.6 0.18 180); /* #2aa198 cyan */
+}
+
+.solarized .xml-attribute-equals {
+  color: oklch(0.75 0.02 90); /* Base text */
+}
+
+.solarized .xml-attribute-value {
+  color: oklch(0.65 0.2 140); /* #859900 green */
+}
+
+.solarized .xml-comment {
+  color: oklch(0.5 0.04 200); /* #586e75 */
+  font-style: italic;
+}
+
+.solarized .xml-cdata {
+  color: oklch(0.6 0.18 180); /* Cyan */
+}
+
+.solarized .xml-doctype {
+  color: oklch(0.6 0.2 290); /* #6c71c4 violet */
+}
+
+.solarized .xml-text {
+  color: oklch(0.75 0.02 90); /* Base text */
+}
+
+/* Gruvbox theme */
+.gruvbox .xml-highlight {
+  color: oklch(0.85 0.05 85); /* #ebdbb2 */
+}
+
+.gruvbox .xml-tag-bracket {
+  color: oklch(0.55 0.22 25); /* #fb4934 red */
+}
+
+.gruvbox .xml-tag-name {
+  color: oklch(0.55 0.22 25); /* Red for tags */
+}
+
+.gruvbox .xml-attribute-name {
+  color: oklch(0.7 0.15 200); /* #8ec07c aqua */
+}
+
+.gruvbox .xml-attribute-equals {
+  color: oklch(0.7 0.04 85); /* Dim text */
+}
+
+.gruvbox .xml-attribute-value {
+  color: oklch(0.65 0.2 140); /* #b8bb26 green */
+}
+
+.gruvbox .xml-comment {
+  color: oklch(0.55 0.04 85); /* #928374 gray */
+  font-style: italic;
+}
+
+.gruvbox .xml-cdata {
+  color: oklch(0.7 0.15 200); /* Aqua */
+}
+
+.gruvbox .xml-doctype {
+  color: oklch(0.6 0.2 320); /* #d3869b purple */
+}
+
+.gruvbox .xml-text {
+  color: oklch(0.85 0.05 85); /* Foreground */
+}
+
+/* Catppuccin theme */
+.catppuccin .xml-highlight {
+  color: oklch(0.9 0.01 280); /* #cdd6f4 */
+}
+
+.catppuccin .xml-tag-bracket {
+  color: oklch(0.65 0.2 15); /* #f38ba8 red */
+}
+
+.catppuccin .xml-tag-name {
+  color: oklch(0.65 0.2 15); /* Red for tags */
+}
+
+.catppuccin .xml-attribute-name {
+  color: oklch(0.75 0.15 280); /* #cba6f7 mauve */
+}
+
+.catppuccin .xml-attribute-equals {
+  color: oklch(0.75 0.02 280); /* Subtext */
+}
+
+.catppuccin .xml-attribute-value {
+  color: oklch(0.8 0.15 160); /* #a6e3a1 green */
+}
+
+.catppuccin .xml-comment {
+  color: oklch(0.5 0.04 280); /* Overlay */
+  font-style: italic;
+}
+
+.catppuccin .xml-cdata {
+  color: oklch(0.75 0.15 220); /* #89b4fa blue */
+}
+
+.catppuccin .xml-doctype {
+  color: oklch(0.8 0.15 350); /* #f5c2e7 pink */
+}
+
+.catppuccin .xml-text {
+  color: oklch(0.9 0.01 280); /* Text */
+}
+
+/* One Dark theme */
+.onedark .xml-highlight {
+  color: oklch(0.85 0.02 240); /* #abb2bf */
+}
+
+.onedark .xml-tag-bracket {
+  color: oklch(0.6 0.2 20); /* #e06c75 red */
+}
+
+.onedark .xml-tag-name {
+  color: oklch(0.6 0.2 20); /* Red for tags */
+}
+
+.onedark .xml-attribute-name {
+  color: oklch(0.8 0.15 80); /* #e5c07b yellow */
+}
+
+.onedark .xml-attribute-equals {
+  color: oklch(0.7 0.02 240); /* Dim text */
+}
+
+.onedark .xml-attribute-value {
+  color: oklch(0.75 0.18 150); /* #98c379 green */
+}
+
+.onedark .xml-comment {
+  color: oklch(0.5 0.03 240); /* #5c6370 */
+  font-style: italic;
+}
+
+.onedark .xml-cdata {
+  color: oklch(0.7 0.15 180); /* #56b6c2 cyan */
+}
+
+.onedark .xml-doctype {
+  color: oklch(0.75 0.15 320); /* #c678dd magenta */
+}
+
+.onedark .xml-text {
+  color: oklch(0.85 0.02 240); /* Text */
+}
+
+/* Synthwave theme */
+.synthwave .xml-highlight {
+  color: oklch(0.95 0.02 320); /* Warm white */
+}
+
+.synthwave .xml-tag-bracket {
+  color: oklch(0.7 0.28 350); /* #f97e72 hot pink */
+}
+
+.synthwave .xml-tag-name {
+  color: oklch(0.7 0.28 350); /* Hot pink */
+  text-shadow: 0 0 8px oklch(0.7 0.28 350 / 0.5);
+}
+
+.synthwave .xml-attribute-name {
+  color: oklch(0.7 0.25 280); /* #ff7edb purple */
+}
+
+.synthwave .xml-attribute-equals {
+  color: oklch(0.8 0.02 320); /* White-ish */
+}
+
+.synthwave .xml-attribute-value {
+  color: oklch(0.85 0.2 60); /* #fede5d yellow */
+  text-shadow: 0 0 5px oklch(0.85 0.2 60 / 0.3);
+}
+
+.synthwave .xml-comment {
+  color: oklch(0.55 0.08 290); /* Dim purple */
+  font-style: italic;
+}
+
+.synthwave .xml-cdata {
+  color: oklch(0.8 0.25 200); /* #72f1b8 cyan */
+}
+
+.synthwave .xml-doctype {
+  color: oklch(0.8 0.25 200); /* Cyan */
+}
+
+.synthwave .xml-text {
+  color: oklch(0.95 0.02 320); /* White */
+}
+
+/* XML Editor container styles */
+.xml-editor {
+  position: relative;
+}
+
+.xml-editor textarea {
+  z-index: 1;
+}
+
+.xml-editor .xml-highlight {
+  z-index: 0;
+}

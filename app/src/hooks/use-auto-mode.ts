@@ -186,7 +186,7 @@ export function useAutoMode() {
     }
   }, [currentProject, setAutoModeRunning, maxConcurrency]);
 
-  // Stop auto mode
+  // Stop auto mode - only turns off the toggle, running tasks continue
   const stop = useCallback(async () => {
     if (!currentProject) {
       console.error("No project selected");
@@ -203,8 +203,11 @@ export function useAutoMode() {
 
       if (result.success) {
         setAutoModeRunning(currentProject.id, false);
-        clearRunningTasks(currentProject.id);
-        console.log("[AutoMode] Stopped successfully");
+        // NOTE: We intentionally do NOT clear running tasks here.
+        // Stopping auto mode only turns off the toggle to prevent new features
+        // from being picked up. Running tasks will complete naturally and be
+        // removed via the auto_mode_feature_complete event.
+        console.log("[AutoMode] Stopped successfully - running tasks will continue");
       } else {
         console.error("[AutoMode] Failed to stop:", result.error);
         throw new Error(result.error || "Failed to stop auto mode");
@@ -213,7 +216,7 @@ export function useAutoMode() {
       console.error("[AutoMode] Error stopping:", error);
       throw error;
     }
-  }, [currentProject, setAutoModeRunning, clearRunningTasks]);
+  }, [currentProject, setAutoModeRunning]);
 
   // Stop a specific feature
   const stopFeature = useCallback(

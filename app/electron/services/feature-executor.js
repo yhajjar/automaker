@@ -193,6 +193,10 @@ class FeatureExecutor {
     let isCodex;
 
     try {
+      // Save the initial git state before starting implementation
+      // This allows us to track only files changed during this session when committing
+      await contextManager.saveInitialGitState(projectPath, feature.id);
+
       // ========================================
       // PHASE 1: PLANNING
       // ========================================
@@ -1062,6 +1066,23 @@ class FeatureExecutor {
         content: "Analyzing changes and creating commit...",
       });
 
+      // Get the files that were changed during this AI session
+      const changedFiles = await contextManager.getFilesChangedDuringSession(
+        projectPath,
+        feature.id
+      );
+
+      // Combine new files and modified files into a single list of files to commit
+      const sessionFiles = [
+        ...changedFiles.newFiles,
+        ...changedFiles.modifiedFiles,
+      ];
+
+      console.log(
+        `[FeatureExecutor] Files changed during session: ${sessionFiles.length}`,
+        sessionFiles
+      );
+
       const abortController = new AbortController();
       execution.abortController = abortController;
 
@@ -1080,7 +1101,9 @@ IMPORTANT RULES:
 - DO NOT write tests
 - DO NOT do anything except analyzing changes and committing them
 - Use the git command line tools via Bash
-- Create proper conventional commit messages based on what was actually changed`,
+- Create proper conventional commit messages based on what was actually changed
+- ONLY commit the specific files that were changed during the AI session (provided in the prompt)
+- DO NOT use 'git add .' - only add the specific files listed`,
         maxTurns: 15, // Allow some turns to analyze and commit
         cwd: projectPath,
         mcpServers: {
@@ -1094,25 +1117,44 @@ IMPORTANT RULES:
         abortController: abortController,
       };
 
+      // Build the file list section for the prompt
+      let fileListSection = "";
+      if (sessionFiles.length > 0) {
+        fileListSection = `
+**Files Changed During This AI Session:**
+The following files were modified or created during this feature implementation:
+${sessionFiles.map((f) => `- ${f}`).join("\n")}
+
+**CRITICAL:** Only commit these specific files listed above. Do NOT use \`git add .\` or \`git add -A\`.
+Instead, add each file individually or use: \`git add ${sessionFiles.map((f) => `"${f}"`).join(" ")}\`
+`;
+      } else {
+        fileListSection = `
+**Note:** No specific files were tracked for this session. Please run \`git status\` to see what files have been modified, and only stage files that appear to be related to this feature implementation. Be conservative - if a file doesn't seem related to this feature, don't include it.
+`;
+      }
+
       // Prompt that guides the agent to create a proper conventional commit
-      const prompt = `Please commit the current changes with a proper conventional commit message.
+      const prompt = `Please commit the changes for this feature with a proper conventional commit message.
 
 **Feature Context:**
 Category: ${feature.category}
 Description: ${feature.description}
-
+${fileListSection}
 **Your Task:**
 
-1. First, run \`git status\` to see all untracked and modified files
-2. Run \`git diff\` to see the actual changes (both staged and unstaged)
+1. First, run \`git status\` to see the current state of the repository
+2. Run \`git diff\` on the specific files listed above to see the actual changes
 3. Run \`git log --oneline -5\` to see recent commit message styles in this repo
-4. Analyze all the changes and draft a proper conventional commit message:
+4. Analyze the changes in the files and draft a proper conventional commit message:
    - Use conventional commit format: \`type(scope): description\`
    - Types: feat, fix, refactor, style, docs, test, chore
    - The description should be concise (under 72 chars) and focus on "what" was done
    - Summarize the nature of the changes (new feature, enhancement, bug fix, etc.)
    - Make sure the commit message accurately reflects the actual code changes
-5. Run \`git add .\` to stage all changes
+5. Stage ONLY the specific files that were changed during this session (listed above)
+   - DO NOT use \`git add .\` or \`git add -A\`
+   - Add files individually: \`git add "path/to/file1" "path/to/file2"\`
 6. Create the commit with a message ending with:
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
@@ -1136,7 +1178,8 @@ EOF
 - DO NOT use the feature description verbatim as the commit message
 - Analyze the actual code changes to determine the appropriate commit message
 - The commit message should be professional and follow conventional commit standards
-- DO NOT modify any code or run tests - ONLY commit the existing changes`;
+- DO NOT modify any code or run tests - ONLY commit the existing changes
+- ONLY stage the specific files listed above - do not commit unrelated changes`;
 
       const currentQuery = query({ prompt, options });
       execution.query = currentQuery;

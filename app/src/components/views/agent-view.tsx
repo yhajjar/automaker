@@ -593,13 +593,16 @@ export function AgentView() {
                 <Card
                   className={cn(
                     "max-w-[80%]",
-                    message.role === "user" &&
-                      "bg-primary text-primary-foreground"
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "border-l-4 border-primary bg-card"
                   )}
                 >
                   <CardContent className="p-3">
                     {message.role === "assistant" ? (
-                      <Markdown className="text-sm">{message.content}</Markdown>
+                      <Markdown className="text-sm text-primary prose-headings:text-primary prose-strong:text-primary prose-code:text-primary">
+                        {message.content}
+                      </Markdown>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">
                         {message.content}
@@ -610,7 +613,7 @@ export function AgentView() {
                         "text-xs mt-2",
                         message.role === "user"
                           ? "text-primary-foreground/70"
-                          : "text-muted-foreground"
+                          : "text-primary/70"
                       )}
                     >
                       {new Date(message.timestamp).toLocaleTimeString()}
@@ -625,11 +628,11 @@ export function AgentView() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <Card>
+                <Card className="border-l-4 border-primary bg-card">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span className="text-sm text-primary">
                         Thinking...
                       </span>
                     </div>
@@ -642,11 +645,12 @@ export function AgentView() {
 
         {/* Input */}
         {currentSessionId && (
-          <div className="border-t p-4 space-y-3">
+          <div className="border-t border-border p-4 space-y-3 bg-background">
             {/* Image Drop Zone (when visible) */}
             {showImageDropZone && (
               <ImageDropZone
                 onImagesSelected={handleImagesSelected}
+                images={selectedImages}
                 maxFiles={5}
                 className="mb-3"
                 disabled={isProcessing || !isConnected}
@@ -658,7 +662,7 @@ export function AgentView() {
               className={cn(
                 "flex gap-2 transition-all duration-200 rounded-lg",
                 isDragOver &&
-                  "bg-blue-50 dark:bg-blue-950/20 ring-2 ring-blue-400 ring-offset-2"
+                  "bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background"
               )}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -680,20 +684,21 @@ export function AgentView() {
                   disabled={isProcessing || !isConnected}
                   data-testid="agent-input"
                   className={cn(
+                    "bg-input border-border",
                     selectedImages.length > 0 &&
-                      "border-blue-200 bg-blue-50/50 dark:bg-blue-950/20",
+                      "border-primary/50 bg-primary/5",
                     isDragOver &&
-                      "border-blue-400 bg-blue-50/50 dark:bg-blue-950/20"
+                      "border-primary bg-primary/10"
                   )}
                 />
                 {selectedImages.length > 0 && !isDragOver && (
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-primary-foreground bg-primary px-2 py-1 rounded">
                     {selectedImages.length} image
                     {selectedImages.length > 1 ? "s" : ""}
                   </div>
                 )}
                 {isDragOver && (
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded flex items-center gap-1">
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-primary-foreground bg-primary px-2 py-1 rounded flex items-center gap-1">
                     <Paperclip className="w-3 h-3" />
                     Drop here
                   </div>
@@ -708,8 +713,8 @@ export function AgentView() {
                 disabled={isProcessing || !isConnected}
                 className={cn(
                   showImageDropZone &&
-                    "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400",
-                  selectedImages.length > 0 && "border-blue-400"
+                    "bg-primary/20 text-primary border-primary",
+                  selectedImages.length > 0 && "border-primary"
                 )}
                 title="Attach images"
               >

@@ -128,10 +128,12 @@ class AutoModeService {
   }
 
   /**
-   * Stop auto mode - stops the auto loop and all running features
+   * Stop auto mode - stops the auto loop but lets running features complete
+   * This only turns off the auto toggle to prevent picking up new features.
+   * Running tasks will continue until they complete naturally.
    */
   async stop() {
-    console.log("[AutoMode] Stopping auto mode");
+    console.log("[AutoMode] Stopping auto mode (letting running features complete)");
 
     this.autoLoopRunning = false;
 
@@ -147,18 +149,15 @@ class AutoModeService {
       this.autoLoopAbortController = null;
     }
 
-    // Abort all running features
-    for (const [featureId, execution] of this.runningFeatures.entries()) {
-      console.log(`[AutoMode] Aborting feature: ${featureId}`);
-      if (execution.abortController) {
-        execution.abortController.abort();
-      }
-    }
+    // NOTE: We intentionally do NOT abort running features here.
+    // Stopping auto mode should only turn off the toggle to prevent new features
+    // from being picked up. Running features will complete naturally.
+    // Use stopFeature() to cancel a specific running feature if needed.
 
-    // Clear all running features
-    this.runningFeatures.clear();
+    const runningCount = this.runningFeatures.size;
+    console.log(`[AutoMode] Auto loop stopped. ${runningCount} feature(s) still running and will complete.`);
 
-    return { success: true };
+    return { success: true, runningFeatures: runningCount };
   }
 
   /**

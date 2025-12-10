@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -512,14 +513,16 @@ export function WelcomeView() {
             >
               Cancel
             </Button>
-            <Button
+            <HotkeyButton
               onClick={handleCreateProject}
               disabled={!newProjectName || !newProjectPath || isCreating}
               className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-600 text-white border-0"
+              hotkey={{ key: "Enter", cmdCtrl: true }}
+              hotkeyActive={showNewProjectDialog}
               data-testid="confirm-create-project"
             >
               {isCreating ? "Creating..." : "Create Project"}
-            </Button>
+            </HotkeyButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

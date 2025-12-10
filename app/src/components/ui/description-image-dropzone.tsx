@@ -31,6 +31,7 @@ interface DescriptionImageDropZoneProps {
   previewMap?: ImagePreviewMap;
   onPreviewMapChange?: (map: ImagePreviewMap) => void;
   autoFocus?: boolean;
+  error?: boolean; // Show error state with red border
 }
 
 const ACCEPTED_IMAGE_TYPES = [
@@ -55,6 +56,7 @@ export function DescriptionImageDropZone({
   previewMap,
   onPreviewMapChange,
   autoFocus = false,
+  error = false,
 }: DescriptionImageDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -306,6 +308,7 @@ export function DescriptionImageDropZone({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           autoFocus={autoFocus}
+          aria-invalid={error}
           className={cn(
             "min-h-[120px]",
             isProcessing && "opacity-50 pointer-events-none"

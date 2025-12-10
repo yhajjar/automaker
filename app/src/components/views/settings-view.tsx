@@ -73,6 +73,7 @@ export function SettingsView() {
     setCurrentView,
     theme,
     setTheme,
+    setProjectTheme,
     kanbanCardDetailLevel,
     setKanbanCardDetailLevel,
     defaultSkipTests,
@@ -87,6 +88,18 @@ export function SettingsView() {
     setKeyboardShortcut,
     resetKeyboardShortcuts,
   } = useAppStore();
+
+  // Compute the effective theme for the current project
+  const effectiveTheme = currentProject?.theme || theme;
+
+  // Handler to set theme - saves to project if one is selected, otherwise to global
+  const handleSetTheme = (newTheme: typeof theme) => {
+    if (currentProject) {
+      setProjectTheme(currentProject.id, newTheme);
+    } else {
+      setTheme(newTheme);
+    }
+  };
   const [anthropicKey, setAnthropicKey] = useState(apiKeys.anthropic);
   const [googleKey, setGoogleKey] = useState(apiKeys.google);
   const [openaiKey, setOpenaiKey] = useState(apiKeys.openai);
@@ -204,13 +217,28 @@ export function SettingsView() {
     if (!container) return;
 
     const handleScroll = () => {
-      const sections = NAV_ITEMS.map((item) => ({
-        id: item.id,
-        element: document.getElementById(item.id),
-      })).filter((s) => s.element);
+      const sections = NAV_ITEMS.filter(
+        (item) => item.id !== "danger" || currentProject
+      )
+        .map((item) => ({
+          id: item.id,
+          element: document.getElementById(item.id),
+        }))
+        .filter((s) => s.element);
 
       const containerRect = container.getBoundingClientRect();
       const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+
+      // Check if scrolled to bottom (within a small threshold)
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+      if (isAtBottom && sections.length > 0) {
+        // If at bottom, highlight the last visible section
+        setActiveSection(sections[sections.length - 1].id);
+        return;
+      }
 
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i];
@@ -227,7 +255,7 @@ export function SettingsView() {
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [currentProject]);
 
   const scrollToSection = useCallback((sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -470,7 +498,7 @@ export function SettingsView() {
 
         {/* Scrollable Content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6 pb-96">
             {/* API Keys Section */}
             <div
               id="api-keys"
@@ -1277,13 +1305,20 @@ export function SettingsView() {
               </div>
               <div className="p-6 space-y-4">
                 <div className="space-y-3">
-                  <Label className="text-foreground">Theme</Label>
+                  <Label className="text-foreground">
+                    Theme{" "}
+                    {currentProject
+                      ? `(for ${currentProject.name})`
+                      : "(Global)"}
+                  </Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Button
-                      variant={theme === "dark" ? "secondary" : "outline"}
-                      onClick={() => setTheme("dark")}
+                      variant={
+                        effectiveTheme === "dark" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("dark")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "dark"
+                        effectiveTheme === "dark"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1293,10 +1328,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Dark</span>
                     </Button>
                     <Button
-                      variant={theme === "light" ? "secondary" : "outline"}
-                      onClick={() => setTheme("light")}
+                      variant={
+                        effectiveTheme === "light" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("light")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "light"
+                        effectiveTheme === "light"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1306,10 +1343,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Light</span>
                     </Button>
                     <Button
-                      variant={theme === "retro" ? "secondary" : "outline"}
-                      onClick={() => setTheme("retro")}
+                      variant={
+                        effectiveTheme === "retro" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("retro")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "retro"
+                        effectiveTheme === "retro"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1319,10 +1358,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Retro</span>
                     </Button>
                     <Button
-                      variant={theme === "dracula" ? "secondary" : "outline"}
-                      onClick={() => setTheme("dracula")}
+                      variant={
+                        effectiveTheme === "dracula" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("dracula")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "dracula"
+                        effectiveTheme === "dracula"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1332,10 +1373,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Dracula</span>
                     </Button>
                     <Button
-                      variant={theme === "nord" ? "secondary" : "outline"}
-                      onClick={() => setTheme("nord")}
+                      variant={
+                        effectiveTheme === "nord" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("nord")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "nord"
+                        effectiveTheme === "nord"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1345,10 +1388,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Nord</span>
                     </Button>
                     <Button
-                      variant={theme === "monokai" ? "secondary" : "outline"}
-                      onClick={() => setTheme("monokai")}
+                      variant={
+                        effectiveTheme === "monokai" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("monokai")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "monokai"
+                        effectiveTheme === "monokai"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1358,10 +1403,14 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Monokai</span>
                     </Button>
                     <Button
-                      variant={theme === "tokyonight" ? "secondary" : "outline"}
-                      onClick={() => setTheme("tokyonight")}
+                      variant={
+                        effectiveTheme === "tokyonight"
+                          ? "secondary"
+                          : "outline"
+                      }
+                      onClick={() => handleSetTheme("tokyonight")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "tokyonight"
+                        effectiveTheme === "tokyonight"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1371,10 +1420,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Tokyo Night</span>
                     </Button>
                     <Button
-                      variant={theme === "solarized" ? "secondary" : "outline"}
-                      onClick={() => setTheme("solarized")}
+                      variant={
+                        effectiveTheme === "solarized" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("solarized")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "solarized"
+                        effectiveTheme === "solarized"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1384,10 +1435,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Solarized</span>
                     </Button>
                     <Button
-                      variant={theme === "gruvbox" ? "secondary" : "outline"}
-                      onClick={() => setTheme("gruvbox")}
+                      variant={
+                        effectiveTheme === "gruvbox" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("gruvbox")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "gruvbox"
+                        effectiveTheme === "gruvbox"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1397,10 +1450,14 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Gruvbox</span>
                     </Button>
                     <Button
-                      variant={theme === "catppuccin" ? "secondary" : "outline"}
-                      onClick={() => setTheme("catppuccin")}
+                      variant={
+                        effectiveTheme === "catppuccin"
+                          ? "secondary"
+                          : "outline"
+                      }
+                      onClick={() => handleSetTheme("catppuccin")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "catppuccin"
+                        effectiveTheme === "catppuccin"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1410,10 +1467,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">Catppuccin</span>
                     </Button>
                     <Button
-                      variant={theme === "onedark" ? "secondary" : "outline"}
-                      onClick={() => setTheme("onedark")}
+                      variant={
+                        effectiveTheme === "onedark" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("onedark")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "onedark"
+                        effectiveTheme === "onedark"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1423,10 +1482,12 @@ export function SettingsView() {
                       <span className="font-medium text-sm">One Dark</span>
                     </Button>
                     <Button
-                      variant={theme === "synthwave" ? "secondary" : "outline"}
-                      onClick={() => setTheme("synthwave")}
+                      variant={
+                        effectiveTheme === "synthwave" ? "secondary" : "outline"
+                      }
+                      onClick={() => handleSetTheme("synthwave")}
                       className={`flex items-center justify-center gap-2 px-3 py-3 h-auto ${
-                        theme === "synthwave"
+                        effectiveTheme === "synthwave"
                           ? "border-brand-500 ring-1 ring-brand-500/50"
                           : ""
                       }`}
@@ -1959,10 +2020,11 @@ export function SettingsView() {
                         Show profiles only by default
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        When enabled, the Add Feature dialog will show only AI profiles
-                        and hide advanced model tweaking options (Claude SDK, thinking levels,
-                        and OpenAI Codex CLI). This creates a cleaner, less overwhelming UI.
-                        You can always disable this to access advanced settings.
+                        When enabled, the Add Feature dialog will show only AI
+                        profiles and hide advanced model tweaking options
+                        (Claude SDK, thinking levels, and OpenAI Codex CLI).
+                        This creates a cleaner, less overwhelming UI. You can
+                        always disable this to access advanced settings.
                       </p>
                     </div>
                   </div>

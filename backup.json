@@ -68,7 +68,7 @@
     "category": "Uncategorized",
     "description": "Can you please add some spacing and fix the styling of the hotkey with the command enter and make it so they're both vertically aligned for those icons?",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T17:44:08.667Z",
     "imagePaths": [
       {
@@ -87,7 +87,7 @@
     "category": "Uncategorized",
     "description": "Fix the styling on all the buttons when I hover over them with my mouse they never change to a click mouse cursor. In order they seem to show any type of like hover state changes, if they do, at least for the certain game I'm using, it's not very obvious that you're hovering over the button.",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T17:45:59.666Z",
     "imagePaths": [],
     "skipTests": true,
@@ -100,7 +100,7 @@
     "category": "Kanban",
     "description": "The tabs in the add new feature modal for the prompt model and testing tabs. They don't seem to look like tabs when I'm on a certain theme. Can you verify that those are hooked into the theme? And make sure that the active one is colored differently than the unactive ones. Keep the primary colors when doing this.",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T17:46:00.019Z",
     "imagePaths": [],
     "skipTests": true,
@@ -113,7 +113,7 @@
     "category": "Uncategorized",
     "description": "There's a strange issue when I when when these agents are like doing things it seems like it completely refreshes the whole Kanban board and there's like a black flash. Can you verify that the data loading does not cause the entire component to refresh? Maybe there's an issue with the react effect or how the component is rendered maybe we need some used memos or something but it shouldn't refresh the whole page it should just like update the individual cards when they change.",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T17:47:20.170Z",
     "imagePaths": [],
     "skipTests": true,
@@ -126,7 +126,7 @@
     "category": "Uncategorized",
     "description": "Add in the ability so that every project can have its own selected theme. This will allow me to have different projects have different themes so I can easily differentiate when I have one project selected or not.",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T18:00:33.814Z",
     "imagePaths": [],
     "skipTests": true,
@@ -139,8 +139,7 @@
     "category": "Agent Runner",
     "description": "On the Agent Runner, I took a screenshot and dropped it into the text area and after a certain amount of time, it's like the image preview just completely went away. Can you debug and fix this on the Agent Runner?",
     "steps": [],
-    "status": "verified",
-    "startedAt": "2025-12-10T18:11:17.561Z",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
     "model": "opus",
@@ -151,11 +150,9 @@
     "category": "Kanban",
     "description": "It seems like the category typehead is no longer working. Can you double check that code didn't break? It should have kept track of categories inside of the categories.json file inside the .automaker folder when adding new features modal",
     "steps": [],
-    "status": "verified",
-    "startedAt": "2025-12-10T18:17:22.274Z",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Fixed category typeahead dropdown being clipped by overflow containers. Modified: category-autocomplete.tsx. Changed dropdown to use React Portal (createPortal) to render to document.body with fixed positioning and z-index 9999. Added scroll/resize position tracking to keep dropdown aligned with input.",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -164,7 +161,7 @@
     "category": "Kanban",
     "description": "Add in the ability to just click and drag a card from the waiting approval directly into the verify column as I can usually just commit it manually if I want to.",
     "steps": [],
-    "status": "verified",
+    "status": "waiting_approval",
     "startedAt": "2025-12-10T18:05:08.252Z",
     "imagePaths": [],
     "skipTests": true,
@@ -177,11 +174,9 @@
     "category": "Uncategorized",
     "description": "The commit functionality on the waiting approval cards doesn't seem to work. It just committed everything in my working copy for git. I think I should be a little bit more intelligent and figure out what files it changed for that AI session and then only try to git add those individual files and commit those. Right now it just basically did a git add all and committed those. Re-factor the prompting or figure out a way to make it so it's more specific on what it's going to commit with the future change.",
     "steps": [],
-    "status": "verified",
-    "startedAt": "2025-12-10T18:17:22.580Z",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Fixed commit functionality to only commit files changed during the AI session, not all working directory changes. Added git state tracking in context-manager.js (saveInitialGitState, getFilesChangedDuringSession methods) and updated commit prompt in feature-executor.js to use specific file lists instead of 'git add .'",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -190,11 +185,9 @@
     "category": "Uncategorized",
     "description": "I'm noticing that a lot of buttons in the UI, especially the ones that are submitting, are either missing the submit hotkey or they're not styled properly. Look at the add feature submit button that's on the add feature modal and abstract away a submit button so that on every single page that needs to submit something I can reuse this type of hotkey functionality. In fact, every single button should be abstracted enough where I can provide a hotkey and it will automatically listen if I press that hotkey when it's in view.",
     "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T19:03:41.338Z",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Fixed duplicate hotkey listener issue. When HotkeyButton was used with simple keys (N, F, G) that were already handled by useKeyboardShortcuts, it created duplicate listeners. Added hotkeyActive={false} to HotkeyButton instances in board-view.tsx (Add Feature, Start Next), context-view.tsx (Add File), profiles-view.tsx (New Profile), and session-manager.tsx (New) where useKeyboardShortcuts already handles the hotkey. Also updated memory.md with this lesson learned.",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -203,7 +196,7 @@
     "category": "Uncategorized",
     "description": "Can you add some more padding to the bottom of the settings panel? Notice that I can't scroll down all the way. And that doesn't highlight the left sub navigation to highlight it pink when I'm on that section. I should be able to scroll a bit further and just have like blank space at the bottom. So I can eventually get to that actual section.",
     "steps": [],
-    "status": "verified",
+    "status": "backlog",
     "imagePaths": [
       {
         "id": "img-1765389750685-jhq6rcidc",
@@ -213,7 +206,6 @@
       }
     ],
     "skipTests": true,
-    "summary": "Added bottom padding (pb-96) to settings panel content area to allow scrolling past last section. Improved scroll detection to highlight the last navigation item when scrolled to bottom. Modified: settings-view.tsx",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -222,10 +214,9 @@
     "category": "Uncategorized",
     "description": "Add some type of XML highlighting to the spec editor view. Right now it's just all grayscale and it's kind of ugly to look at. And try to make the syntax highlighting match the current selected theme.",
     "steps": [],
-    "status": "verified",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Added XML syntax highlighting to spec editor view. Created: xml-syntax-editor.tsx component with custom XML tokenizer and theme-aware syntax highlighting. Modified: spec-view.tsx to use new editor, globals.css with 500+ lines of theme-specific syntax highlighting colors for all 12 themes (light, dark, retro, dracula, nord, monokai, tokyonight, solarized, gruvbox, catppuccin, onedark, synthwave). Features: highlights tag brackets, tag names, attribute names, attribute values, comments, CDATA, DOCTYPE. Tab key indentation supported.",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -234,11 +225,11 @@
     "category": "Uncategorized",
     "description": "Add a search bar to the top of the Kanban column that allows me to search the filter down just to show the cards I'm interested in by keyword.",
     "steps": [],
-    "status": "verified",
+    "status": "in_progress",
     "startedAt": "2025-12-10T18:09:26.193Z",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Added forward slash (/) keyboard shortcut to focus search input. Modified: board-view.tsx - added searchInputRef, registered '/' shortcut in boardShortcuts, updated placeholder to show hint '(Press / to focus)'",
+    "summary": "Added search bar to Kanban board. Modified: board-view.tsx. Features: 1) Search input with icon at top of columns, 2) Case-insensitive filtering by description or category, 3) Clear button to reset search, 4) Real-time filtering as you type.",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -247,10 +238,9 @@
     "category": "Uncategorized",
     "description": "In the project select can you actually remove the whole like 1 2 3 4 5 hotkeys instead? Just make it be a type ahead so when I open the panel I just should be able to type in the first letter or two of the project that I want and press enter and that should Just select it for me",
     "steps": [],
-    "status": "verified",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Replaced hotkey-based project selection (1-9) with type-ahead search. Modified: sidebar.tsx. Added search input with filtering, arrow key navigation (↑↓), Enter to select, and visual highlighting. Auto-focuses search when dropdown opens.",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -259,10 +249,9 @@
     "category": "Uncategorized",
     "description": "In the add new feature prompt, instead of disabling the add feature button until we type into the description, keep it enabled. But if you click it, make sure you just show the client side validation and turn the description box in any other required field as red so that the user knows they have to fill it in.",
     "steps": [],
-    "status": "verified",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Added client-side validation for the Add Feature dialog. The Add Feature button is now always enabled. When clicked without a description, it shows a red border around the description field using aria-invalid styling. Modified: board-view.tsx (added descriptionError state, validation in handleAddFeature, error prop passing), description-image-dropzone.tsx (added error prop that sets aria-invalid on textarea).",
     "model": "opus",
     "thinkingLevel": "none"
   },
@@ -271,124 +260,9 @@
     "category": "Uncategorized",
     "description": "Can you please in the top right of the Kanban board use the show three icons for the Kanban card display formatting. You can look at the settings page to see that there's three different settings that we use for displaying the Kanban card information. But I also just want this to be really quickly accessible at the top right of the Kanban that they can switch between those three toggles. Keep them simple only just icons you don't need to put words in them. Make sure they do have harbor states though, or tooltips I mean.",
     "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T18:58:21.431Z",
+    "status": "backlog",
     "imagePaths": [],
     "skipTests": true,
-    "summary": "Moved Kanban card detail toggle icons to search bar row. Modified: board-view.tsx. Three icons (Minimize2, Square, Maximize2) now appear on the right side of the search bar with tooltips and hover states.",
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765390359456-n0vvdurjb",
-    "category": "Kanban",
-    "description": "When the item is in the backlog, do not show the logs. There's no reason for a user to look at the logs if it's in the backlog. So remove the logs button from the card, the Kanban card, if it's in the backlog.",
-    "steps": [],
-    "status": "verified",
-    "imagePaths": [],
-    "skipTests": true,
-    "summary": "Removed logs button from Kanban cards when feature is in backlog. Modified: kanban-card.tsx - removed the dedicated logs button section for backlog items (lines 743-761) and added condition to hide logs option in dropdown menu for backlog items.",
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765390428237-4ekiscpsf",
-    "category": "Uncategorized",
-    "description": "On the Kanban search bar, instead of press slash to focus, just use the normal shortcut display button that we've been using everywhere else in the application. Can you keep it consistent, please?",
-    "steps": [],
-    "status": "verified",
-    "imagePaths": [
-      {
-        "id": "img-1765390414226-66vm6cly4",
-        "path": "/Users/webdevcody/Library/Application Support/automaker/images/1765390414225-7o9wizw90_Screenshot_2025-12-10_at_1.13.32_PM.png",
-        "filename": "Screenshot 2025-12-10 at 1.13.32 PM.png",
-        "mimeType": "image/png"
-      }
-    ],
-    "skipTests": true,
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765390699789-uaxtse6hn",
-    "category": "Uncategorized",
-    "description": "Please fix the styling of this on the Agent Runner, make it match the theme of the project.",
-    "steps": [],
-    "status": "verified",
-    "imagePaths": [
-      {
-        "id": "img-1765390692809-0hahbe30j",
-        "path": "/Users/webdevcody/Library/Application Support/automaker/images/1765390692808-u8dgwxx9n_Screenshot_2025-12-10_at_1.18.07_PM.png",
-        "filename": "Screenshot 2025-12-10 at 1.18.07 PM.png",
-        "mimeType": "image/png"
-      }
-    ],
-    "skipTests": true,
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765393057026-cjgr70d97",
-    "category": "Kanban",
-    "description": "there is a major bug: stopping auto mode should not cancel all running tasks, it should just turn off the auto toggle.",
-    "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T18:57:56.137Z",
-    "imagePaths": [],
-    "skipTests": true,
-    "summary": "Fixed auto mode stop to only turn off the toggle, not cancel running tasks. Modified: auto-mode-service.js (removed abort/clear logic from stop()), use-auto-mode.ts (removed clearRunningTasks from stop callback). Running features now complete naturally.",
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765393405243-xe047s4h5",
-    "category": "Uncategorized",
-    "description": "fix the style of the input on the kanban route to add a border around the entire input",
-    "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T19:08:38.024Z",
-    "imagePaths": [
-      {
-        "id": "img-1765393386453-nd1qucdne",
-        "path": "/Users/webdevcody/Workspace/automaker/.automaker/images/1765393386452-bz4q5pbkw_Screenshot_2025-12-10_at_2.03.04_PM.png",
-        "filename": "Screenshot 2025-12-10 at 2.03.04 PM.png",
-        "mimeType": "image/png"
-      }
-    ],
-    "skipTests": true,
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765395197833-hkxty2nb9",
-    "category": "Uncategorized",
-    "description": "on the agent runner chat window, style the text to match the theme primary or secondary, restyle it to match the selected theme",
-    "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T19:33:18.742Z",
-    "imagePaths": [
-      {
-        "id": "img-1765395175327-vdj77vwtb",
-        "path": "/Users/webdevcody/Workspace/automaker/.automaker/images/1765395175325-plp2txel3_Screenshot_2025-12-10_at_2.32.52_PM.png",
-        "filename": "Screenshot 2025-12-10 at 2.32.52 PM.png",
-        "mimeType": "image/png"
-      }
-    ],
-    "skipTests": true,
-    "summary": "Styled agent chat messages to use theme primary colors. Modified: agent-view.tsx, interview-view.tsx. Assistant messages now have border-l-4 border-primary, text-primary for content and timestamps. Loading/thinking indicators also styled with theme colors.",
-    "model": "opus",
-    "thinkingLevel": "none"
-  },
-  {
-    "id": "feature-1765395217816-22cwdpnu9",
-    "category": "Uncategorized",
-    "description": "the add feature shortcut on the add new feature modal does not work anymore, please fix it",
-    "steps": [],
-    "status": "waiting_approval",
-    "startedAt": "2025-12-10T19:35:54.453Z",
-    "imagePaths": [],
-    "skipTests": true,
-    "summary": "Fixed Cmd+Enter shortcut not working in Add Feature modal when input is focused. Modified: hotkey-button.tsx - Changed logic to allow cmdCtrl modifier shortcuts even when typing in input fields, since they are intentional submit actions.",
     "model": "opus",
     "thinkingLevel": "none"
   }

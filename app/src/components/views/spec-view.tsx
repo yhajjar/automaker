@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAppStore } from "@/store/app-store";
 import { getElectronAPI } from "@/lib/electron";
 import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Save, RefreshCw, FileText, Sparkles, Loader2, FilePlus2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { XmlSyntaxEditor } from "@/components/ui/xml-syntax-editor";
 import type { SpecRegenerationEvent } from "@/types/electron";
 
 export function SpecView() {
@@ -299,13 +301,15 @@ export function SpecView() {
               >
                 Cancel
               </Button>
-              <Button
+              <HotkeyButton
                 onClick={handleCreateSpec}
                 disabled={!projectOverview.trim()}
+                hotkey={{ key: "Enter", cmdCtrl: true }}
+                hotkeyActive={showCreateDialog}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Generate Spec
-              </Button>
+              </HotkeyButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -359,12 +363,10 @@ export function SpecView() {
       {/* Editor */}
       <div className="flex-1 p-4 overflow-hidden">
         <Card className="h-full overflow-hidden">
-          <textarea
-            className="w-full h-full p-4 font-mono text-sm bg-transparent resize-none focus:outline-none"
+          <XmlSyntaxEditor
             value={appSpec}
-            onChange={(e) => handleChange(e.target.value)}
+            onChange={handleChange}
             placeholder="Write your app specification here..."
-            spellCheck={false}
             data-testid="spec-editor"
           />
         </Card>
@@ -409,9 +411,11 @@ export function SpecView() {
             >
               Cancel
             </Button>
-            <Button
+            <HotkeyButton
               onClick={handleRegenerate}
               disabled={!projectDefinition.trim() || isRegenerating}
+              hotkey={{ key: "Enter", cmdCtrl: true }}
+              hotkeyActive={showRegenerateDialog}
             >
               {isRegenerating ? (
                 <>
@@ -424,7 +428,7 @@ export function SpecView() {
                   Regenerate Spec
                 </>
               )}
-            </Button>
+            </HotkeyButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

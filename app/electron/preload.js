@@ -23,8 +23,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // App APIs
   getPath: (name) => ipcRenderer.invoke("app:getPath", name),
-  saveImageToTemp: (data, filename, mimeType) =>
-    ipcRenderer.invoke("app:saveImageToTemp", { data, filename, mimeType }),
+  saveImageToTemp: (data, filename, mimeType, projectPath) =>
+    ipcRenderer.invoke("app:saveImageToTemp", { data, filename, mimeType, projectPath }),
 
   // Agent APIs
   agent: {

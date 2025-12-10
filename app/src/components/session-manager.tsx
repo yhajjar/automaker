@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -29,15 +30,56 @@ import { useAppStore } from "@/store/app-store";
 
 // Random session name generator
 const adjectives = [
-  "Swift", "Bright", "Clever", "Dynamic", "Eager", "Focused", "Gentle", "Happy",
-  "Inventive", "Jolly", "Keen", "Lively", "Mighty", "Noble", "Optimal", "Peaceful",
-  "Quick", "Radiant", "Smart", "Tranquil", "Unique", "Vibrant", "Wise", "Zealous"
+  "Swift",
+  "Bright",
+  "Clever",
+  "Dynamic",
+  "Eager",
+  "Focused",
+  "Gentle",
+  "Happy",
+  "Inventive",
+  "Jolly",
+  "Keen",
+  "Lively",
+  "Mighty",
+  "Noble",
+  "Optimal",
+  "Peaceful",
+  "Quick",
+  "Radiant",
+  "Smart",
+  "Tranquil",
+  "Unique",
+  "Vibrant",
+  "Wise",
+  "Zealous",
 ];
 
 const nouns = [
-  "Agent", "Builder", "Coder", "Developer", "Explorer", "Forge", "Garden", "Helper",
-  "Innovator", "Journey", "Kernel", "Lighthouse", "Mission", "Navigator", "Oracle",
-  "Project", "Quest", "Runner", "Spark", "Task", "Unicorn", "Voyage", "Workshop"
+  "Agent",
+  "Builder",
+  "Coder",
+  "Developer",
+  "Explorer",
+  "Forge",
+  "Garden",
+  "Helper",
+  "Innovator",
+  "Journey",
+  "Kernel",
+  "Lighthouse",
+  "Mission",
+  "Navigator",
+  "Oracle",
+  "Project",
+  "Quest",
+  "Runner",
+  "Spark",
+  "Task",
+  "Unicorn",
+  "Voyage",
+  "Workshop",
 ];
 
 function generateRandomSessionName(): string {
@@ -69,7 +111,9 @@ export function SessionManager({
   const [editingName, setEditingName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newSessionName, setNewSessionName] = useState("");
-  const [runningSessions, setRunningSessions] = useState<Set<string>>(new Set());
+  const [runningSessions, setRunningSessions] = useState<Set<string>>(
+    new Set()
+  );
 
   // Check running state for all sessions
   const checkRunningSessions = async (sessionList: SessionListItem[]) => {
@@ -86,7 +130,10 @@ export function SessionManager({
         }
       } catch (err) {
         // Ignore errors for individual session checks
-        console.warn(`[SessionManager] Failed to check running state for ${session.id}:`, err);
+        console.warn(
+          `[SessionManager] Failed to check running state for ${session.id}:`,
+          err
+        );
       }
     }
 
@@ -235,7 +282,8 @@ export function SessionManager({
 
   const activeSessions = sessions.filter((s) => !s.isArchived);
   const archivedSessions = sessions.filter((s) => s.isArchived);
-  const displayedSessions = activeTab === "active" ? activeSessions : archivedSessions;
+  const displayedSessions =
+    activeTab === "active" ? activeSessions : archivedSessions;
 
   return (
     <Card className="h-full flex flex-col">
@@ -243,25 +291,26 @@ export function SessionManager({
         <div className="flex items-center justify-between mb-4">
           <CardTitle>Agent Sessions</CardTitle>
           {activeTab === "active" && (
-            <Button
+            <HotkeyButton
               variant="default"
               size="sm"
               onClick={handleQuickCreateSession}
+              hotkey={shortcuts.newSession}
+              hotkeyActive={false}
               data-testid="new-session-button"
               title={`New Session (${shortcuts.newSession})`}
             >
               <Plus className="w-4 h-4 mr-1" />
               New
-              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-primary-foreground/20 border border-primary-foreground/30 text-primary-foreground">
-                {shortcuts.newSession}
-              </span>
-            </Button>
+            </HotkeyButton>
           )}
         </div>
 
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as "active" | "archived")}
+          onValueChange={(value) =>
+            setActiveTab(value as "active" | "archived")
+          }
           className="w-full"
         >
           <TabsList className="w-full">
@@ -277,7 +326,10 @@ export function SessionManager({
         </Tabs>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-2" data-testid="session-list">
+      <CardContent
+        className="flex-1 overflow-y-auto space-y-2"
+        data-testid="session-list"
+      >
         {/* Create new session */}
         {isCreating && (
           <div className="p-3 border rounded-lg bg-muted/50">
@@ -332,8 +384,7 @@ export function SessionManager({
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter")
-                          handleRenameSession(session.id);
+                        if (e.key === "Enter") handleRenameSession(session.id);
                         if (e.key === "Escape") {
                           setEditingSessionId(null);
                           setEditingName("");
@@ -370,13 +421,17 @@ export function SessionManager({
                   <>
                     <div className="flex items-center gap-2 mb-1">
                       {/* Show loading indicator if this session is running (either current session thinking or any session in runningSessions) */}
-                      {((currentSessionId === session.id && isCurrentSessionThinking) || runningSessions.has(session.id)) ? (
+                      {(currentSessionId === session.id &&
+                        isCurrentSessionThinking) ||
+                      runningSessions.has(session.id) ? (
                         <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
                       ) : (
                         <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                       )}
                       <h3 className="font-medium truncate">{session.name}</h3>
-                      {((currentSessionId === session.id && isCurrentSessionThinking) || runningSessions.has(session.id)) && (
+                      {((currentSessionId === session.id &&
+                        isCurrentSessionThinking) ||
+                        runningSessions.has(session.id)) && (
                         <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                           thinking...
                         </span>
@@ -460,7 +515,9 @@ export function SessionManager({
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p className="text-sm">
-              {activeTab === "active" ? "No active sessions" : "No archived sessions"}
+              {activeTab === "active"
+                ? "No active sessions"
+                : "No archived sessions"}
             </p>
             <p className="text-xs">
               {activeTab === "active"

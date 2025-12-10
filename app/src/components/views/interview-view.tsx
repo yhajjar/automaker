@@ -431,17 +431,22 @@ export function InterviewView() {
             <Card
               className={cn(
                 "max-w-[80%]",
-                message.role === "user" && "bg-primary text-primary-foreground"
+                message.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "border-l-4 border-primary bg-card"
               )}
             >
               <CardContent className="p-3">
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className={cn(
+                  "text-sm whitespace-pre-wrap",
+                  message.role === "assistant" && "text-primary"
+                )}>{message.content}</p>
                 <p
                   className={cn(
                     "text-xs mt-2",
                     message.role === "user"
                       ? "text-primary-foreground/70"
-                      : "text-muted-foreground"
+                      : "text-primary/70"
                   )}
                 >
                   {message.timestamp.toLocaleTimeString()}
@@ -456,11 +461,11 @@ export function InterviewView() {
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <Bot className="w-4 h-4 text-primary" />
             </div>
-            <Card>
+            <Card className="border-l-4 border-primary bg-card">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span className="text-sm text-primary">
                     Generating specification...
                   </span>
                 </div>

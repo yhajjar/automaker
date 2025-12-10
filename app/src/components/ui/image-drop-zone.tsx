@@ -12,6 +12,7 @@ interface ImageDropZoneProps {
   className?: string;
   children?: React.ReactNode;
   disabled?: boolean;
+  images?: ImageAttachment[]; // Optional controlled images prop
 }
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -24,11 +25,23 @@ export function ImageDropZone({
   className,
   children,
   disabled = false,
+  images,
 }: ImageDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<ImageAttachment[]>([]);
+  const [internalImages, setInternalImages] = useState<ImageAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use controlled images if provided, otherwise use internal state
+  const selectedImages = images ?? internalImages;
+
+  // Update images - for controlled mode, just call the callback; for uncontrolled, also update internal state
+  const updateImages = useCallback((newImages: ImageAttachment[]) => {
+    if (images === undefined) {
+      setInternalImages(newImages);
+    }
+    onImagesSelected(newImages);
+  }, [images, onImagesSelected]);
 
   const processFiles = useCallback(async (files: FileList) => {
     if (disabled || isProcessing) return;
@@ -79,12 +92,11 @@ export function ImageDropZone({
 
     if (newImages.length > 0) {
       const allImages = [...selectedImages, ...newImages];
-      setSelectedImages(allImages);
-      onImagesSelected(allImages);
+      updateImages(allImages);
     }
 
     setIsProcessing(false);
-  }, [disabled, isProcessing, maxFiles, maxFileSize, selectedImages, onImagesSelected]);
+  }, [disabled, isProcessing, maxFiles, maxFileSize, selectedImages, updateImages]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -132,14 +144,12 @@ export function ImageDropZone({
 
   const removeImage = useCallback((imageId: string) => {
     const updated = selectedImages.filter(img => img.id !== imageId);
-    setSelectedImages(updated);
-    onImagesSelected(updated);
-  }, [selectedImages, onImagesSelected]);
+    updateImages(updated);
+  }, [selectedImages, updateImages]);
 
   const clearAllImages = useCallback(() => {
-    setSelectedImages([]);
-    onImagesSelected([]);
-  }, [onImagesSelected]);
+    updateImages([]);
+  }, [updateImages]);
 
   return (
     <div className={cn("relative", className)}>

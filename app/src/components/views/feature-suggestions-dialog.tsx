@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -426,9 +427,11 @@ export function FeatureSuggestionsDialog({
                 <Button variant="ghost" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button
+                <HotkeyButton
                   onClick={handleImport}
                   disabled={selectedIds.size === 0 || isImporting}
+                  hotkey={{ key: "Enter", cmdCtrl: true }}
+                  hotkeyActive={open && hasSuggestions}
                 >
                   {isImporting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -437,7 +440,7 @@ export function FeatureSuggestionsDialog({
                   )}
                   Import {selectedIds.size} Feature
                   {selectedIds.size !== 1 ? "s" : ""}
-                </Button>
+                </HotkeyButton>
               </div>
             </div>
           )}
