@@ -37,6 +37,7 @@ import {
   Folder,
   GitBranch,
   TestTube,
+  Settings2,
 } from "lucide-react";
 import { getElectronAPI } from "@/lib/electron";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,6 +74,8 @@ export function SettingsView() {
     setDefaultSkipTests,
     useWorktrees,
     setUseWorktrees,
+    showProfilesOnly,
+    setShowProfilesOnly,
     currentProject,
     moveProjectToTrash,
   } = useAppStore();
@@ -1283,6 +1286,40 @@ export function SettingsView() {
                 </p>
               </div>
               <div className="p-6 space-y-4">
+                {/* Profiles Only Setting */}
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="show-profiles-only"
+                      checked={showProfilesOnly}
+                      onCheckedChange={(checked) =>
+                        setShowProfilesOnly(checked === true)
+                      }
+                      className="mt-0.5"
+                      data-testid="show-profiles-only-checkbox"
+                    />
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor="show-profiles-only"
+                        className="text-foreground cursor-pointer font-medium flex items-center gap-2"
+                      >
+                        <Settings2 className="w-4 h-4 text-brand-500" />
+                        Show profiles only by default
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        When enabled, the Add Feature dialog will show only AI profiles
+                        and hide advanced model tweaking options (Claude SDK, thinking levels,
+                        and OpenAI Codex CLI). This creates a cleaner, less overwhelming UI.
+                        You can always disable this to access advanced settings.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Separator */}
+                <div className="border-t border-border" />
+
+                {/* Skip Tests Setting */}
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
                     <Checkbox
@@ -1297,7 +1334,7 @@ export function SettingsView() {
                     <div className="space-y-1">
                       <Label
                         htmlFor="default-skip-tests"
-                        className="text-foreground cursor-pointer font-medium"
+                        className="text-foreground cursor-pointer font-medium flex items-center gap-2"
                       >
                         <TestTube className="w-4 h-4 text-brand-500" />
                         Skip automated testing by default

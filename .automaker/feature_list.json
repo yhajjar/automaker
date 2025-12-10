@@ -274,5 +274,23 @@
     "summary": "Fixed all TypeScript errors in the codebase. Modified: src/app/api/claude/test/route.ts (rewrote to use fetch instead of missing @anthropic-ai/sdk), src/lib/electron.ts (fixed saveImageToTemp signature, removed duplicate Window declaration), src/types/electron.d.ts (added deleteFile, resumeFeature, contextExists, analyzeProject methods), src/store/app-store.ts (added FileTreeNode, ProjectAnalysis types and analysis state/actions), src/components/views/analysis-view.tsx (added type annotations for implicit any), src/hooks/use-electron-agent.ts (fixed return type to include queue properties). Created: src/components/ui/badge.tsx (new component required by chat-history.tsx).",
     "model": "opus",
     "thinkingLevel": "ultrathink"
+  },
+  {
+    "id": "feature-1765371638849-1gfiifuqy",
+    "category": "Uncategorized",
+    "description": "So currently we have both predefined profiles and custom one created by users and custom tweaking in modal tab when creatign new feature for ai agent to run i want you to add an abbility in our settings view to have enabled only showing profiels by default and what that mean that the model tweaking like selecting bewteen claude / codex and thinking mode is hidden and only profiles are shown so the ui wont be ower head and if users want to tweaks seetings they can always reenabled it in setting view ",
+    "steps": [],
+    "status": "verified",
+    "imagePaths": [
+      {
+        "id": "img-1765371471290-6jcmwkviv",
+        "path": "/Users/shirone/Library/Application Support/automaker/images/1765371471287-jejcmoc8q_SCR-20251210-lpki.png",
+        "filename": "SCR-20251210-lpki.png",
+        "mimeType": "image/png"
+      }
+    ],
+    "skipTests": true,
+    "model": "sonnet",
+    "thinkingLevel": "medium"
   }
 ]

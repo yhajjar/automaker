@@ -192,6 +192,9 @@ export interface AppState {
   // AI Profiles
   aiProfiles: AIProfile[];
 
+  // Profile Display Settings
+  showProfilesOnly: boolean; // When true, hide model tweaking options and show only profile selection
+
   // Project Analysis
   projectAnalysis: ProjectAnalysis | null;
   isAnalyzing: boolean;
@@ -282,6 +285,9 @@ export interface AppActions {
 
   // Worktree Settings actions
   setUseWorktrees: (enabled: boolean) => void;
+
+  // Profile Display Settings actions
+  setShowProfilesOnly: (enabled: boolean) => void;
 
   // AI Profile actions
   addAIProfile: (profile: Omit<AIProfile, "id">) => void;
@@ -377,6 +383,7 @@ const initialState: AppState = {
   kanbanCardDetailLevel: "standard", // Default to standard detail level
   defaultSkipTests: false, // Default to TDD mode (tests enabled)
   useWorktrees: false, // Default to disabled (worktree feature is experimental)
+  showProfilesOnly: false, // Default to showing all options (not profiles only)
   aiProfiles: DEFAULT_AI_PROFILES,
   projectAnalysis: null,
   isAnalyzing: false,
@@ -711,6 +718,9 @@ export const useAppStore = create<AppState & AppActions>()(
       // Worktree Settings actions
       setUseWorktrees: (enabled) => set({ useWorktrees: enabled }),
 
+      // Profile Display Settings actions
+      setShowProfilesOnly: (enabled) => set({ showProfilesOnly: enabled }),
+
       // AI Profile actions
       addAIProfile: (profile) => {
         const id = `profile-${Date.now()}-${Math.random()
@@ -766,6 +776,7 @@ export const useAppStore = create<AppState & AppActions>()(
         kanbanCardDetailLevel: state.kanbanCardDetailLevel,
         defaultSkipTests: state.defaultSkipTests,
         useWorktrees: state.useWorktrees,
+        showProfilesOnly: state.showProfilesOnly,
         aiProfiles: state.aiProfiles,
       }),
     }

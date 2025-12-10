@@ -185,6 +185,7 @@ export function BoardView() {
     setMaxConcurrency,
     defaultSkipTests,
     useWorktrees,
+    showProfilesOnly,
     aiProfiles,
   } = useAppStore();
   const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
@@ -223,6 +224,9 @@ export function BoardView() {
   const [followUpPreviewMap, setFollowUpPreviewMap] = useState<ImagePreviewMap>(
     () => new Map()
   );
+  // Local state to temporarily show advanced options when profiles-only mode is enabled
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [showEditAdvancedOptions, setShowEditAdvancedOptions] = useState(false);
 
   // Make current project available globally for modal
   useEffect(() => {
@@ -1619,9 +1623,10 @@ export function BoardView() {
       {/* Add Feature Dialog */}
       <Dialog open={showAddDialog} onOpenChange={(open) => {
         setShowAddDialog(open);
-        // Clear preview map when dialog closes
+        // Clear preview map and reset advanced options when dialog closes
         if (!open) {
           setNewFeaturePreviewMap(new Map());
+          setShowAdvancedOptions(false);
         }
       }}>
         <DialogContent
@@ -1694,6 +1699,29 @@ export function BoardView() {
 
             {/* Model Tab */}
             <TabsContent value="model" className="space-y-4 overflow-y-auto">
+              {/* Show Advanced Options Toggle - only when profiles-only mode is enabled */}
+              {showProfilesOnly && (
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Simple Mode Active
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Only showing AI profiles. Advanced model tweaking is hidden.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    data-testid="show-advanced-options-toggle"
+                  >
+                    <Settings2 className="w-4 h-4 mr-2" />
+                    {showAdvancedOptions ? 'Hide' : 'Show'} Advanced
+                  </Button>
+                </div>
+              )}
+
               {/* Quick Select Profile Section */}
               {aiProfiles.length > 0 && (
                 <div className="space-y-3">
@@ -1775,9 +1803,10 @@ export function BoardView() {
               )}
 
               {/* Separator */}
-              {aiProfiles.length > 0 && <div className="border-t border-border" />}
+              {aiProfiles.length > 0 && (!showProfilesOnly || showAdvancedOptions) && <div className="border-t border-border" />}
 
-              {/* Claude Models Section */}
+              {/* Claude Models Section - Hidden when showProfilesOnly is true and showAdvancedOptions is false */}
+              {(!showProfilesOnly || showAdvancedOptions) && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
@@ -1844,11 +1873,13 @@ export function BoardView() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Separator */}
-              <div className="border-t border-border" />
+              {(!showProfilesOnly || showAdvancedOptions) && <div className="border-t border-border" />}
 
-              {/* Codex Models Section */}
+              {/* Codex Models Section - Hidden when showProfilesOnly is true and showAdvancedOptions is false */}
+              {(!showProfilesOnly || showAdvancedOptions) && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
@@ -1873,6 +1904,7 @@ export function BoardView() {
                   Codex models do not support thinking levels.
                 </p>
               </div>
+              )}
             </TabsContent>
 
             {/* Testing Tab */}
@@ -1960,7 +1992,12 @@ export function BoardView() {
       {/* Edit Feature Dialog */}
       <Dialog
         open={!!editingFeature}
-        onOpenChange={() => setEditingFeature(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingFeature(null);
+            setShowEditAdvancedOptions(false);
+          }
+        }}
       >
         <DialogContent compact={!isMaximized} data-testid="edit-feature-dialog">
           <DialogHeader>
@@ -2020,6 +2057,29 @@ export function BoardView() {
 
               {/* Model Tab */}
               <TabsContent value="model" className="space-y-4 overflow-y-auto">
+                {/* Show Advanced Options Toggle - only when profiles-only mode is enabled */}
+                {showProfilesOnly && (
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">
+                        Simple Mode Active
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Only showing AI profiles. Advanced model tweaking is hidden.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEditAdvancedOptions(!showEditAdvancedOptions)}
+                      data-testid="edit-show-advanced-options-toggle"
+                    >
+                      <Settings2 className="w-4 h-4 mr-2" />
+                      {showEditAdvancedOptions ? 'Hide' : 'Show'} Advanced
+                    </Button>
+                  </div>
+                )}
+
                 {/* Quick Select Profile Section */}
                 {aiProfiles.length > 0 && (
                   <div className="space-y-3">
@@ -2091,9 +2151,10 @@ export function BoardView() {
                 )}
 
                 {/* Separator */}
-                {aiProfiles.length > 0 && <div className="border-t border-border" />}
+                {aiProfiles.length > 0 && (!showProfilesOnly || showEditAdvancedOptions) && <div className="border-t border-border" />}
 
-                {/* Claude Models Section */}
+                {/* Claude Models Section - Hidden when showProfilesOnly is true and showEditAdvancedOptions is false */}
+                {(!showProfilesOnly || showEditAdvancedOptions) && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
@@ -2161,11 +2222,13 @@ export function BoardView() {
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Separator */}
-                <div className="border-t border-border" />
+                {(!showProfilesOnly || showEditAdvancedOptions) && <div className="border-t border-border" />}
 
-                {/* Codex Models Section */}
+                {/* Codex Models Section - Hidden when showProfilesOnly is true and showEditAdvancedOptions is false */}
+                {(!showProfilesOnly || showEditAdvancedOptions) && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
@@ -2191,6 +2254,7 @@ export function BoardView() {
                     Codex models do not support thinking levels.
                   </p>
                 </div>
+                )}
               </TabsContent>
 
               {/* Testing Tab */}
