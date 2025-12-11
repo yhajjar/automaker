@@ -181,7 +181,6 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
     const isModified = shortcuts.some(
       (s) => keyboardShortcuts[s] !== DEFAULT_KEYBOARD_SHORTCUTS[s]
     );
-    const hasModifierShortcuts = shortcutInfos.some(s => s.hasModifiers);
 
     // Get category for coloring (use first shortcut's category if multiple)
     const category = shortcuts.length > 0 ? SHORTCUT_CATEGORIES[shortcuts[0]] : null;
@@ -193,7 +192,7 @@ export function KeyboardMap({ onKeySelect, selectedKey, className }: KeyboardMap
         onClick={() => onKeySelect?.(keyDef.key)}
         className={cn(
           "relative flex flex-col items-center justify-center rounded-lg border transition-all",
-          "h-12 min-w-[2.75rem] py-1",
+          "h-12 min-w-11 py-1",
           keyDef.width > 1 && `w-[${keyDef.width * 2.75}rem]`,
           // Base styles
           !isBound && "bg-sidebar-accent/10 border-sidebar-border hover:bg-sidebar-accent/20",

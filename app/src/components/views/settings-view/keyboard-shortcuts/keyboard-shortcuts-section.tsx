@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Settings2, Keyboard } from "lucide-react";
 
 interface KeyboardShortcutsSectionProps {

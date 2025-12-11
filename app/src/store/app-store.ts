@@ -50,6 +50,7 @@ export function parseShortcut(shortcut: string): ShortcutKey {
   const parts = shortcut.split("+").map(p => p.trim());
   const result: ShortcutKey = { key: parts[parts.length - 1] };
 
+  // Normalize common OS-specific modifiers (Cmd/Ctrl/Win/Super symbols) into cmdCtrl
   for (let i = 0; i < parts.length - 1; i++) {
     const modifier = parts[i].toLowerCase();
     if (modifier === "shift") result.shift = true;
@@ -65,13 +66,19 @@ export function formatShortcut(shortcut: string, forDisplay = false): string {
   const parsed = parseShortcut(shortcut);
   const parts: string[] = [];
 
-  // Improved OS detection
-  let platform: 'darwin' | 'win32' | 'linux' = 'linux';
-  if (typeof navigator !== 'undefined') {
-    const p = navigator.platform.toLowerCase();
-    if (p.includes('mac')) platform = 'darwin';
-    else if (p.includes('win')) platform = 'win32';
-  }
+  // Prefer User-Agent Client Hints when available; fall back to legacy
+  const platform: 'darwin' | 'win32' | 'linux' = (() => {
+    if (typeof navigator === 'undefined') return 'linux';
+
+    const uaPlatform = (navigator as Navigator & { userAgentData?: { platform?: string } })
+      .userAgentData?.platform?.toLowerCase?.();
+    const legacyPlatform = navigator.platform?.toLowerCase?.();
+    const platformString = uaPlatform || legacyPlatform || '';
+
+    if (platformString.includes('mac')) return 'darwin';
+    if (platformString.includes('win')) return 'win32';
+    return 'linux';
+  })();
 
   // Primary modifier - OS-specific
   if (parsed.cmdCtrl) {

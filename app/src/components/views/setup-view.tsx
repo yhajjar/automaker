@@ -780,6 +780,22 @@ function CodexSetupStep({
   const [apiKey, setApiKey] = useState("");
   const [isSavingKey, setIsSavingKey] = useState(false);
 
+  // Normalize CLI auth method strings to our store-friendly values
+  const mapAuthMethod = (method?: string): CodexAuthStatus["method"] => {
+    switch (method) {
+      case "cli_verified":
+        return "cli_verified";
+      case "cli_tokens":
+        return "cli_tokens";
+      case "auth_file":
+        return "api_key";
+      case "env_var":
+        return "env";
+      default:
+        return "none";
+    }
+  };
+
   const checkStatus = useCallback(async () => {
     console.log("[Codex Setup] Starting status check...");
     setIsChecking(true);
@@ -805,13 +821,7 @@ function CodexSetupStep({
           setCodexCliStatus(cliStatus);
 
           if (result.auth) {
-            const method = result.auth.method === "cli_verified" || result.auth.method === "cli_tokens"
-              ? (result.auth.method === "cli_verified" ? "cli_verified" : "cli_tokens")
-              : result.auth.method === "auth_file" 
-              ? "api_key" 
-              : result.auth.method === "env_var" 
-              ? "env" 
-              : "none";
+            const method = mapAuthMethod(result.auth.method);
             
             const authStatus: CodexAuthStatus = {
               authenticated: result.auth.authenticated,
