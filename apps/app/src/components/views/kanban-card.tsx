@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -110,6 +110,14 @@ interface KanbanCardProps {
   contextContent?: string;
   /** Feature summary from agent completion */
   summary?: string;
+  /** Opacity percentage (0-100) */
+  opacity?: number;
+  /** Whether to use glassmorphism (backdrop-blur) effect */
+  glassmorphism?: boolean;
+  /** Whether to show card borders */
+  cardBorderEnabled?: boolean;
+  /** Card border opacity percentage (0-100) */
+  cardBorderOpacity?: number;
 }
 
 export const KanbanCard = memo(function KanbanCard({
@@ -131,12 +139,17 @@ export const KanbanCard = memo(function KanbanCard({
   shortcutKey,
   contextContent,
   summary,
+  opacity = 100,
+  glassmorphism = true,
+  cardBorderEnabled = true,
+  cardBorderOpacity = 100,
 }: KanbanCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [isRevertDialogOpen, setIsRevertDialogOpen] = useState(false);
   const [agentInfo, setAgentInfo] = useState<AgentTaskInfo | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { kanbanCardDetailLevel } = useAppStore();
 
   // Check if feature has worktree
@@ -147,6 +160,43 @@ export const KanbanCard = memo(function KanbanCard({
     kanbanCardDetailLevel === "standard" ||
     kanbanCardDetailLevel === "detailed";
   const showAgentInfo = kanbanCardDetailLevel === "detailed";
+
+  // Helper to check if "just finished" badge should be shown (within 2 minutes)
+  const isJustFinished = useMemo(() => {
+    if (
+      !feature.justFinishedAt ||
+      feature.status !== "waiting_approval" ||
+      feature.error
+    ) {
+      return false;
+    }
+    const finishedTime = new Date(feature.justFinishedAt).getTime();
+    const twoMinutes = 2 * 60 * 1000; // 2 minutes in milliseconds
+    return currentTime - finishedTime < twoMinutes;
+  }, [feature.justFinishedAt, feature.status, feature.error, currentTime]);
+
+  // Update current time periodically to check if badge should be hidden
+  useEffect(() => {
+    if (!feature.justFinishedAt || feature.status !== "waiting_approval") {
+      return;
+    }
+
+    const finishedTime = new Date(feature.justFinishedAt).getTime();
+    const twoMinutes = 2 * 60 * 1000; // 2 minutes in milliseconds
+    const timeRemaining = twoMinutes - (currentTime - finishedTime);
+
+    if (timeRemaining <= 0) {
+      // Already past 2 minutes
+      return;
+    }
+
+    // Update time every second to check if 2 minutes have passed
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [feature.justFinishedAt, feature.status, currentTime]);
 
   // Load context file for in_progress, waiting_approval, and verified features
   useEffect(() => {
@@ -184,11 +234,11 @@ export const KanbanCard = memo(function KanbanCard({
         } else {
           // Fallback to direct file read for backward compatibility
           const contextPath = `${currentProject.path}/.automaker/features/${feature.id}/agent-output.md`;
-        const result = await api.readFile(contextPath);
+          const result = await api.readFile(contextPath);
 
-        if (result.success && result.content) {
-          const info = parseAgentContext(result.content);
-          setAgentInfo(info);
+          if (result.success && result.content) {
+            const info = parseAgentContext(result.content);
+            setAgentInfo(info);
           }
         }
       } catch {
@@ -241,15 +291,42 @@ export const KanbanCard = memo(function KanbanCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : undefined,
   };
+
+  // Calculate border style based on enabled state and opacity
+  const borderStyle: React.CSSProperties = { ...style };
+  if (!cardBorderEnabled) {
+    (borderStyle as Record<string, string>).borderWidth = "0px";
+    (borderStyle as Record<string, string>).borderColor = "transparent";
+  } else if (cardBorderOpacity !== 100) {
+    // Apply border opacity using color-mix to blend the border color with transparent
+    // The --border variable uses oklch format, so we use color-mix in oklch space
+    // Ensure border width is set (1px is the default Tailwind border width)
+    (borderStyle as Record<string, string>).borderWidth = "1px";
+    (
+      borderStyle as Record<string, string>
+    ).borderColor = `color-mix(in oklch, var(--border) ${cardBorderOpacity}%, transparent)`;
+  }
 
   return (
     <Card
       ref={setNodeRef}
-      style={style}
+      style={borderStyle}
       className={cn(
-        "cursor-grab active:cursor-grabbing transition-all backdrop-blur-sm border-border relative kanban-card-content select-none",
-        isDragging && "opacity-50 scale-105 shadow-lg",
+        "cursor-grab active:cursor-grabbing transition-all relative kanban-card-content select-none",
+        // Apply border class when border is enabled and opacity is 100%
+        // When opacity is not 100%, we use inline styles for border color
+        cardBorderEnabled && cardBorderOpacity === 100 && "border-border",
+        // When border is enabled but opacity is not 100%, we still need border width
+        cardBorderEnabled && cardBorderOpacity !== 100 && "border",
+        // Remove default background when using opacity overlay
+        !isDragging && "bg-transparent",
+        // Remove default backdrop-blur-sm from Card component when glassmorphism is disabled
+        !glassmorphism && "backdrop-blur-[0px]!",
+        isDragging && "scale-105 shadow-lg",
+        // Special border styles for running/error states override the border opacity
+        // These need to be applied with higher specificity
         isCurrentAutoTask &&
           "border-running-indicator border-2 shadow-running-indicator/50 shadow-lg animate-pulse",
         feature.error &&
@@ -262,6 +339,16 @@ export const KanbanCard = memo(function KanbanCard({
       {...attributes}
       {...(isDraggable ? listeners : {})}
     >
+      {/* Background overlay with opacity - only affects background, not content */}
+      {!isDragging && (
+        <div
+          className={cn(
+            "absolute inset-0 rounded-xl bg-card -z-10",
+            glassmorphism && "backdrop-blur-sm"
+          )}
+          style={{ opacity: opacity / 100 }}
+        />
+      )}
       {/* Skip Tests indicator badge */}
       {feature.skipTests && !feature.error && (
         <div
@@ -292,8 +379,8 @@ export const KanbanCard = memo(function KanbanCard({
           <span>Errored</span>
         </div>
       )}
-      {/* Just Finished indicator badge - shows when agent just completed work */}
-      {feature.justFinished && feature.status === "waiting_approval" && !feature.error && (
+      {/* Just Finished indicator badge - shows when agent just completed work (for 2 minutes) */}
+      {isJustFinished && (
         <div
           className={cn(
             "absolute px-1.5 py-0.5 text-[10px] font-medium rounded flex items-center gap-1 z-10",
@@ -304,7 +391,7 @@ export const KanbanCard = memo(function KanbanCard({
           title="Agent just finished working on this feature"
         >
           <Sparkles className="w-3 h-3" />
-          <span>Done</span>
+          <span>Fresh Baked</span>
         </div>
       )}
       {/* Branch badge - show when feature has a worktree */}
@@ -317,18 +404,22 @@ export const KanbanCard = memo(function KanbanCard({
                   "absolute px-1.5 py-0.5 text-[10px] font-medium rounded flex items-center gap-1 z-10 cursor-default",
                   "bg-purple-500/20 border border-purple-500/50 text-purple-400",
                   // Position below other badges if present, otherwise use normal position
-                  feature.error || feature.skipTests || (feature.justFinished && feature.status === "waiting_approval")
+                  feature.error || feature.skipTests || isJustFinished
                     ? "top-8 left-2"
                     : "top-2 left-2"
                 )}
                 data-testid={`branch-badge-${feature.id}`}
               >
                 <GitBranch className="w-3 h-3 shrink-0" />
-                <span className="truncate max-w-[80px]">{feature.branchName?.replace("feature/", "")}</span>
+                <span className="truncate max-w-[80px]">
+                  {feature.branchName?.replace("feature/", "")}
+                </span>
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-[300px]">
-              <p className="font-mono text-xs break-all">{feature.branchName}</p>
+              <p className="font-mono text-xs break-all">
+                {feature.branchName}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -337,9 +428,11 @@ export const KanbanCard = memo(function KanbanCard({
         className={cn(
           "p-3 pb-2 block", // Reset grid layout to block for custom kanban card layout
           // Add extra top padding when badges are present to prevent text overlap
-          (feature.skipTests || feature.error || (feature.justFinished && feature.status === "waiting_approval")) && "pt-10",
+          (feature.skipTests || feature.error || isJustFinished) && "pt-10",
           // Add even more top padding when both badges and branch are shown
-          hasWorktree && (feature.skipTests || feature.error || (feature.justFinished && feature.status === "waiting_approval")) && "pt-14"
+          hasWorktree &&
+            (feature.skipTests || feature.error || isJustFinished) &&
+            "pt-14"
         )}
       >
         {isCurrentAutoTask && (
@@ -471,7 +564,9 @@ export const KanbanCard = memo(function KanbanCard({
                 ) : (
                   <Circle className="w-3 h-3 mt-0.5 shrink-0" />
                 )}
-                <span className="break-words hyphens-auto line-clamp-2 leading-relaxed">{step}</span>
+                <span className="break-words hyphens-auto line-clamp-2 leading-relaxed">
+                  {step}
+                </span>
               </div>
             ))}
             {feature.steps.length > 3 && (
@@ -565,7 +660,8 @@ export const KanbanCard = memo(function KanbanCard({
                           todo.status === "completed" &&
                             "text-muted-foreground line-through",
                           todo.status === "in_progress" && "text-amber-400",
-                          todo.status === "pending" && "text-foreground-secondary"
+                          todo.status === "pending" &&
+                            "text-foreground-secondary"
                         )}
                       >
                         {todo.content}
@@ -878,9 +974,13 @@ export const KanbanCard = memo(function KanbanCard({
               <Sparkles className="w-5 h-5 text-green-400" />
               Implementation Summary
             </DialogTitle>
-            <DialogDescription className="text-sm" title={feature.description || feature.summary || ""}>
+            <DialogDescription
+              className="text-sm"
+              title={feature.description || feature.summary || ""}
+            >
               {(() => {
-                const displayText = feature.description || feature.summary || "No description";
+                const displayText =
+                  feature.description || feature.summary || "No description";
                 return displayText.length > 100
                   ? `${displayText.slice(0, 100)}...`
                   : displayText;
@@ -916,10 +1016,15 @@ export const KanbanCard = memo(function KanbanCard({
               Revert Changes
             </DialogTitle>
             <DialogDescription>
-              This will discard all changes made by the agent and move the feature back to the backlog.
+              This will discard all changes made by the agent and move the
+              feature back to the backlog.
               {feature.branchName && (
                 <span className="block mt-2 font-medium">
-                  Branch <code className="bg-muted px-1 py-0.5 rounded">{feature.branchName}</code> will be deleted.
+                  Branch{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded">
+                    {feature.branchName}
+                  </code>{" "}
+                  will be deleted.
                 </span>
               )}
               <span className="block mt-2 text-red-400 font-medium">

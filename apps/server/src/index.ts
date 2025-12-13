@@ -32,6 +32,7 @@ import { createWorkspaceRoutes } from "./routes/workspace.js";
 import { createTemplatesRoutes } from "./routes/templates.js";
 import { AgentService } from "./services/agent-service.js";
 import { FeatureLoader } from "./services/feature-loader.js";
+import { AutoModeService } from "./services/auto-mode-service.js";
 
 // Load environment variables
 dotenv.config();
@@ -87,6 +88,7 @@ const events: EventEmitter = createEventEmitter();
 // Create services
 const agentService = new AgentService(DATA_DIR, events);
 const featureLoader = new FeatureLoader();
+const autoModeService = new AutoModeService(events);
 
 // Initialize services
 (async () => {
@@ -104,14 +106,14 @@ app.use("/api/fs", createFsRoutes(events));
 app.use("/api/agent", createAgentRoutes(agentService, events));
 app.use("/api/sessions", createSessionsRoutes(agentService));
 app.use("/api/features", createFeaturesRoutes(featureLoader));
-app.use("/api/auto-mode", createAutoModeRoutes(events));
+app.use("/api/auto-mode", createAutoModeRoutes(autoModeService));
 app.use("/api/worktree", createWorktreeRoutes());
 app.use("/api/git", createGitRoutes());
 app.use("/api/setup", createSetupRoutes());
 app.use("/api/suggestions", createSuggestionsRoutes(events));
 app.use("/api/models", createModelsRoutes());
 app.use("/api/spec-regeneration", createSpecRegenerationRoutes(events));
-app.use("/api/running-agents", createRunningAgentsRoutes());
+app.use("/api/running-agents", createRunningAgentsRoutes(autoModeService));
 app.use("/api/workspace", createWorkspaceRoutes());
 app.use("/api/templates", createTemplatesRoutes());
 

@@ -26,18 +26,6 @@ import {
   UserCircle,
   MoreVertical,
   Palette,
-  Moon,
-  Sun,
-  Terminal,
-  Ghost,
-  Snowflake,
-  Flame,
-  Sparkles as TokyoNightIcon,
-  Eclipse,
-  Trees,
-  Cat,
-  Atom,
-  Radio,
   Monitor,
   Search,
   Bug,
@@ -71,7 +59,12 @@ import {
   useKeyboardShortcutsConfig,
   KeyboardShortcut,
 } from "@/hooks/use-keyboard-shortcuts";
-import { getElectronAPI, Project, TrashedProject, RunningAgent } from "@/lib/electron";
+import {
+  getElectronAPI,
+  Project,
+  TrashedProject,
+  RunningAgent,
+} from "@/lib/electron";
 import {
   initializeProject,
   hasAppSpec,
@@ -79,6 +72,7 @@ import {
 } from "@/lib/project-init";
 import { toast } from "sonner";
 import { Sparkles, Loader2 } from "lucide-react";
+import { themeOptions } from "@/config/theme-options";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { SpecRegenerationEvent } from "@/types/electron";
 import { DeleteProjectDialog } from "@/components/views/settings-view/components/delete-project-dialog";
@@ -175,21 +169,14 @@ function SortableProjectItem({
   );
 }
 
-// Theme options for project theme selector
+// Theme options for project theme selector - derived from the shared config
 const PROJECT_THEME_OPTIONS = [
   { value: "", label: "Use Global", icon: Monitor },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "light", label: "Light", icon: Sun },
-  { value: "retro", label: "Retro", icon: Terminal },
-  { value: "dracula", label: "Dracula", icon: Ghost },
-  { value: "nord", label: "Nord", icon: Snowflake },
-  { value: "monokai", label: "Monokai", icon: Flame },
-  { value: "tokyonight", label: "Tokyo Night", icon: TokyoNightIcon },
-  { value: "solarized", label: "Solarized", icon: Eclipse },
-  { value: "gruvbox", label: "Gruvbox", icon: Trees },
-  { value: "catppuccin", label: "Catppuccin", icon: Cat },
-  { value: "onedark", label: "One Dark", icon: Atom },
-  { value: "synthwave", label: "Synthwave", icon: Radio },
+  ...themeOptions.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    icon: opt.Icon,
+  })),
 ] as const;
 
 export function Sidebar() {
@@ -213,6 +200,7 @@ export function Sidebar() {
     clearProjectHistory,
     setProjectTheme,
     setTheme,
+    setPreviewTheme,
     theme: globalTheme,
     moveProjectToTrash,
   } = useAppStore();
@@ -389,7 +377,10 @@ export function Sidebar() {
               }
             }
           } catch (error) {
-            console.error("[Sidebar] Error fetching running agents count:", error);
+            console.error(
+              "[Sidebar] Error fetching running agents count:",
+              error
+            );
           }
         };
         fetchRunningAgentsCount();
@@ -501,7 +492,8 @@ export function Sidebar() {
           // Create new project - check for trashed project with same path first (preserves theme if deleted/recreated)
           // Then fall back to current effective theme, then global theme
           const trashedProject = trashedProjects.find((p) => p.path === path);
-          const effectiveTheme = trashedProject?.theme || currentProject?.theme || globalTheme;
+          const effectiveTheme =
+            trashedProject?.theme || currentProject?.theme || globalTheme;
           project = {
             id: `project-${Date.now()}`,
             name,
@@ -546,7 +538,14 @@ export function Sidebar() {
         });
       }
     }
-  }, [projects, trashedProjects, addProject, setCurrentProject, currentProject, globalTheme]);
+  }, [
+    projects,
+    trashedProjects,
+    addProject,
+    setCurrentProject,
+    currentProject,
+    globalTheme,
+  ]);
 
   const handleRestoreProject = useCallback(
     (projectId: string) => {
@@ -828,7 +827,9 @@ export function Sidebar() {
         <div
           className={cn(
             "h-20 border-b border-sidebar-border shrink-0 titlebar-drag-region",
-            sidebarOpen ? "pt-8 px-3 lg:px-6 flex items-center justify-between" : "pt-2 pb-2 px-3 flex flex-col items-center justify-center gap-2"
+            sidebarOpen
+              ? "pt-8 px-3 lg:px-6 flex items-center justify-between"
+              : "pt-2 pb-2 px-3 flex flex-col items-center justify-center gap-2"
           )}
         >
           <div
@@ -859,7 +860,9 @@ export function Sidebar() {
           <button
             onClick={() => {
               const api = getElectronAPI();
-              api.openExternalLink("https://github.com/AutoMaker-Org/automaker/issues");
+              api.openExternalLink(
+                "https://github.com/AutoMaker-Org/automaker/issues"
+              );
             }}
             className="titlebar-no-drag p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-all"
             title="Report Bug / Feature Request"
@@ -1001,7 +1004,14 @@ export function Sidebar() {
 
             {/* Project Options Menu - theme and history */}
             {currentProject && (
-              <DropdownMenu>
+              <DropdownMenu
+                onOpenChange={(open) => {
+                  // Clear preview theme when the menu closes
+                  if (!open) {
+                    setPreviewTheme(null);
+                  }
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <button
                     className="hidden lg:flex items-center justify-center w-8 h-[42px] rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 border border-sidebar-border transition-all titlebar-no-drag"
@@ -1024,8 +1034,12 @@ export function Sidebar() {
                       )}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent
-                      className="w-48"
+                      className="w-56"
                       data-testid="project-theme-menu"
+                      onPointerLeave={() => {
+                        // Clear preview theme when leaving the dropdown
+                        setPreviewTheme(null);
+                      }}
                     >
                       <DropdownMenuLabel className="text-xs text-muted-foreground">
                         Select theme for this project
@@ -1035,9 +1049,14 @@ export function Sidebar() {
                         value={currentProject.theme || ""}
                         onValueChange={(value) => {
                           if (currentProject) {
+                            // Clear preview theme when a theme is selected
+                            setPreviewTheme(null);
                             // If selecting an actual theme (not "Use Global"), also update global
                             if (value !== "") {
                               setTheme(value as any);
+                            } else {
+                              // Restore to global theme when "Use Global" is selected
+                              setTheme(globalTheme);
                             }
                             setProjectTheme(
                               currentProject.id,
@@ -1048,22 +1067,54 @@ export function Sidebar() {
                       >
                         {PROJECT_THEME_OPTIONS.map((option) => {
                           const Icon = option.icon;
+                          const themeValue =
+                            option.value === "" ? globalTheme : option.value;
                           return (
-                            <DropdownMenuRadioItem
+                            <div
                               key={option.value}
-                              value={option.value}
-                              data-testid={`project-theme-${
-                                option.value || "global"
-                              }`}
+                              onPointerEnter={() => {
+                                // Preview the theme on hover
+                                setPreviewTheme(themeValue as any);
+                              }}
+                              onPointerLeave={(e) => {
+                                // Clear preview theme when leaving this item
+                                // Only clear if we're not moving to another theme item
+                                const relatedTarget =
+                                  e.relatedTarget as HTMLElement;
+                                if (
+                                  !relatedTarget ||
+                                  !relatedTarget.closest(
+                                    '[data-testid^="project-theme-"]'
+                                  )
+                                ) {
+                                  setPreviewTheme(null);
+                                }
+                              }}
                             >
-                              <Icon className="w-4 h-4 mr-2" />
-                              <span>{option.label}</span>
-                              {option.value === "" && (
-                                <span className="text-[10px] text-muted-foreground ml-1 capitalize">
-                                  ({globalTheme})
-                                </span>
-                              )}
-                            </DropdownMenuRadioItem>
+                              <DropdownMenuRadioItem
+                                value={option.value}
+                                data-testid={`project-theme-${
+                                  option.value || "global"
+                                }`}
+                                onFocus={() => {
+                                  // Preview the theme on keyboard navigation
+                                  setPreviewTheme(themeValue as any);
+                                }}
+                                onBlur={() => {
+                                  // Clear preview theme when losing focus
+                                  // If moving to another item, its onFocus will set it again
+                                  setPreviewTheme(null);
+                                }}
+                              >
+                                <Icon className="w-4 h-4 mr-2" />
+                                <span>{option.label}</span>
+                                {option.value === "" && (
+                                  <span className="text-[10px] text-muted-foreground ml-1 capitalize">
+                                    ({globalTheme})
+                                  </span>
+                                )}
+                              </DropdownMenuRadioItem>
+                            </div>
                           );
                         })}
                       </DropdownMenuRadioGroup>
@@ -1241,14 +1292,25 @@ export function Sidebar() {
             {isActiveRoute("running-agents") && (
               <div className="absolute inset-y-0 left-0 w-0.5 bg-brand-500 rounded-l-md"></div>
             )}
-            <Activity
-              className={cn(
-                "w-4 h-4 shrink-0 transition-colors",
-                isActiveRoute("running-agents")
-                  ? "text-brand-500"
-                  : "group-hover:text-brand-400"
+            <div className="relative">
+              <Activity
+                className={cn(
+                  "w-4 h-4 shrink-0 transition-colors",
+                  isActiveRoute("running-agents")
+                    ? "text-brand-500"
+                    : "group-hover:text-brand-400"
+                )}
+              />
+              {/* Running agents count badge - shown in collapsed state */}
+              {!sidebarOpen && runningAgentsCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-5 h-5 px-1 text-[10px] font-semibold rounded-full bg-brand-500 text-white"
+                  data-testid="running-agents-count-collapsed"
+                >
+                  {runningAgentsCount > 99 ? "99" : runningAgentsCount}
+                </span>
               )}
-            />
+            </div>
             <span
               className={cn(
                 "ml-2.5 font-medium text-sm flex-1 text-left",
@@ -1257,6 +1319,18 @@ export function Sidebar() {
             >
               Running Agents
             </span>
+            {/* Running agents count badge - shown in expanded state */}
+            {sidebarOpen && runningAgentsCount > 0 && (
+              <span
+                className={cn(
+                  "hidden lg:flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-semibold rounded-full bg-brand-500 text-white",
+                  isActiveRoute("running-agents") && "bg-brand-600"
+                )}
+                data-testid="running-agents-count"
+              >
+                {runningAgentsCount > 99 ? "99" : runningAgentsCount}
+              </span>
+            )}
             {!sidebarOpen && (
               <span className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 border border-border">
                 Running Agents
@@ -1328,7 +1402,9 @@ export function Sidebar() {
           </DialogHeader>
 
           {trashedProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Recycle bin is empty.</p>
+            <p className="text-sm text-muted-foreground">
+              Recycle bin is empty.
+            </p>
           ) : (
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
               {trashedProjects.map((project) => (

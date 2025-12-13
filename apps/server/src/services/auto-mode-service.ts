@@ -9,7 +9,11 @@
  * - Verification and merge workflows
  */
 
-import { query, AbortError, type Options } from "@anthropic-ai/claude-agent-sdk";
+import {
+  query,
+  AbortError,
+  type Options,
+} from "@anthropic-ai/claude-agent-sdk";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
@@ -85,7 +89,11 @@ export class AutoModeService {
   }
 
   private async runAutoLoop(): Promise<void> {
-    while (this.autoLoopRunning && this.autoLoopAbortController && !this.autoLoopAbortController.signal.aborted) {
+    while (
+      this.autoLoopRunning &&
+      this.autoLoopAbortController &&
+      !this.autoLoopAbortController.signal.aborted
+    ) {
       try {
         // Check if we have capacity
         if (this.runningFeatures.size >= (this.config?.maxConcurrency || 3)) {
@@ -94,7 +102,9 @@ export class AutoModeService {
         }
 
         // Load pending features
-        const pendingFeatures = await this.loadPendingFeatures(this.config!.projectPath);
+        const pendingFeatures = await this.loadPendingFeatures(
+          this.config!.projectPath
+        );
 
         if (pendingFeatures.length === 0) {
           this.emitAutoModeEvent("auto_mode_complete", {
@@ -105,7 +115,9 @@ export class AutoModeService {
         }
 
         // Find a feature not currently running
-        const nextFeature = pendingFeatures.find((f) => !this.runningFeatures.has(f.id));
+        const nextFeature = pendingFeatures.find(
+          (f) => !this.runningFeatures.has(f.id)
+        );
 
         if (nextFeature) {
           // Start feature execution in background
@@ -164,7 +176,11 @@ export class AutoModeService {
 
     // Setup worktree if enabled
     if (useWorktrees) {
-      worktreePath = await this.setupWorktree(projectPath, featureId, branchName);
+      worktreePath = await this.setupWorktree(
+        projectPath,
+        featureId,
+        branchName
+      );
     }
 
     const workDir = worktreePath || projectPath;
@@ -183,7 +199,11 @@ export class AutoModeService {
     this.emitAutoModeEvent("auto_mode_feature_start", {
       featureId,
       projectPath,
-      feature: { id: featureId, title: "Loading...", description: "Feature is starting" },
+      feature: {
+        id: featureId,
+        title: "Loading...",
+        description: "Feature is starting",
+      },
     });
 
     try {
@@ -203,16 +223,25 @@ export class AutoModeService {
       await this.runAgent(workDir, featureId, prompt, abortController);
 
       // Mark as waiting_approval for user review
-      await this.updateFeatureStatus(projectPath, featureId, "waiting_approval");
+      await this.updateFeatureStatus(
+        projectPath,
+        featureId,
+        "waiting_approval"
+      );
 
       this.emitAutoModeEvent("auto_mode_feature_complete", {
         featureId,
         passes: true,
-        message: `Feature completed in ${Math.round((Date.now() - this.runningFeatures.get(featureId)!.startTime) / 1000)}s`,
+        message: `Feature completed in ${Math.round(
+          (Date.now() - this.runningFeatures.get(featureId)!.startTime) / 1000
+        )}s`,
         projectPath,
       });
     } catch (error) {
-      if (error instanceof AbortError || (error as Error)?.name === "AbortError") {
+      if (
+        error instanceof AbortError ||
+        (error as Error)?.name === "AbortError"
+      ) {
         this.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           passes: false,
@@ -221,9 +250,10 @@ export class AutoModeService {
         });
       } else {
         const errorMessage = (error as Error).message || "Unknown error";
-        const isAuthError = errorMessage.includes("Authentication failed") ||
-                           errorMessage.includes("Invalid API key") ||
-                           errorMessage.includes("authentication_failed");
+        const isAuthError =
+          errorMessage.includes("Authentication failed") ||
+          errorMessage.includes("Invalid API key") ||
+          errorMessage.includes("authentication_failed");
 
         console.error(`[AutoMode] Feature ${featureId} failed:`, error);
         await this.updateFeatureStatus(projectPath, featureId, "backlog");
@@ -280,7 +310,12 @@ export class AutoModeService {
     if (hasContext) {
       // Load previous context and continue
       const context = await fs.readFile(contextPath, "utf-8");
-      return this.executeFeatureWithContext(projectPath, featureId, context, useWorktrees);
+      return this.executeFeatureWithContext(
+        projectPath,
+        featureId,
+        context,
+        useWorktrees
+      );
     }
 
     // No context, start fresh
@@ -303,7 +338,12 @@ export class AutoModeService {
     const abortController = new AbortController();
 
     // Check if worktree exists
-    const worktreePath = path.join(projectPath, ".automaker", "worktrees", featureId);
+    const worktreePath = path.join(
+      projectPath,
+      ".automaker",
+      "worktrees",
+      featureId
+    );
     let workDir = projectPath;
 
     try {
@@ -366,14 +406,28 @@ Address the follow-up instructions above. Review the previous work and make the 
     this.emitAutoModeEvent("auto_mode_feature_start", {
       featureId,
       projectPath,
-      feature: feature || { id: featureId, title: "Follow-up", description: prompt.substring(0, 100) },
+      feature: feature || {
+        id: featureId,
+        title: "Follow-up",
+        description: prompt.substring(0, 100),
+      },
     });
 
     try {
-      await this.runAgent(workDir, featureId, fullPrompt, abortController, imagePaths);
+      await this.runAgent(
+        workDir,
+        featureId,
+        fullPrompt,
+        abortController,
+        imagePaths
+      );
 
       // Mark as waiting_approval for user review
-      await this.updateFeatureStatus(projectPath, featureId, "waiting_approval");
+      await this.updateFeatureStatus(
+        projectPath,
+        featureId,
+        "waiting_approval"
+      );
 
       this.emitAutoModeEvent("auto_mode_feature_complete", {
         featureId,
@@ -397,8 +451,16 @@ Address the follow-up instructions above. Review the previous work and make the 
   /**
    * Verify a feature's implementation
    */
-  async verifyFeature(projectPath: string, featureId: string): Promise<boolean> {
-    const worktreePath = path.join(projectPath, ".automaker", "worktrees", featureId);
+  async verifyFeature(
+    projectPath: string,
+    featureId: string
+  ): Promise<boolean> {
+    const worktreePath = path.join(
+      projectPath,
+      ".automaker",
+      "worktrees",
+      featureId
+    );
     let workDir = projectPath;
 
     try {
@@ -417,7 +479,8 @@ Address the follow-up instructions above. Review the previous work and make the 
     ];
 
     let allPassed = true;
-    const results: Array<{ check: string; passed: boolean; output?: string }> = [];
+    const results: Array<{ check: string; passed: boolean; output?: string }> =
+      [];
 
     for (const check of verificationChecks) {
       try {
@@ -425,7 +488,11 @@ Address the follow-up instructions above. Review the previous work and make the 
           cwd: workDir,
           timeout: 120000,
         });
-        results.push({ check: check.name, passed: true, output: stdout || stderr });
+        results.push({
+          check: check.name,
+          passed: true,
+          output: stdout || stderr,
+        });
       } catch (error) {
         allPassed = false;
         results.push({
@@ -442,7 +509,9 @@ Address the follow-up instructions above. Review the previous work and make the 
       passes: allPassed,
       message: allPassed
         ? "All verification checks passed"
-        : `Verification failed: ${results.find(r => !r.passed)?.check || "Unknown"}`,
+        : `Verification failed: ${
+            results.find((r) => !r.passed)?.check || "Unknown"
+          }`,
     });
 
     return allPassed;
@@ -451,8 +520,16 @@ Address the follow-up instructions above. Review the previous work and make the 
   /**
    * Commit feature changes
    */
-  async commitFeature(projectPath: string, featureId: string): Promise<string | null> {
-    const worktreePath = path.join(projectPath, ".automaker", "worktrees", featureId);
+  async commitFeature(
+    projectPath: string,
+    featureId: string
+  ): Promise<string | null> {
+    const worktreePath = path.join(
+      projectPath,
+      ".automaker",
+      "worktrees",
+      featureId
+    );
     let workDir = projectPath;
 
     try {
@@ -464,7 +541,9 @@ Address the follow-up instructions above. Review the previous work and make the 
 
     try {
       // Check for changes
-      const { stdout: status } = await execAsync("git status --porcelain", { cwd: workDir });
+      const { stdout: status } = await execAsync("git status --porcelain", {
+        cwd: workDir,
+      });
       if (!status.trim()) {
         return null; // No changes
       }
@@ -482,7 +561,9 @@ Address the follow-up instructions above. Review the previous work and make the 
       });
 
       // Get commit hash
-      const { stdout: hash } = await execAsync("git rev-parse HEAD", { cwd: workDir });
+      const { stdout: hash } = await execAsync("git rev-parse HEAD", {
+        cwd: workDir,
+      });
 
       this.emitAutoModeEvent("auto_mode_feature_complete", {
         featureId,
@@ -500,7 +581,10 @@ Address the follow-up instructions above. Review the previous work and make the 
   /**
    * Check if context exists for a feature
    */
-  async contextExists(projectPath: string, featureId: string): Promise<boolean> {
+  async contextExists(
+    projectPath: string,
+    featureId: string
+  ): Promise<boolean> {
     const contextPath = path.join(
       projectPath,
       ".automaker",
@@ -527,7 +611,11 @@ Address the follow-up instructions above. Review the previous work and make the 
     this.emitAutoModeEvent("auto_mode_feature_start", {
       featureId: analysisFeatureId,
       projectPath,
-      feature: { id: analysisFeatureId, title: "Project Analysis", description: "Analyzing project structure" },
+      feature: {
+        id: analysisFeatureId,
+        title: "Project Analysis",
+        description: "Analyzing project structure",
+      },
     });
 
     const prompt = `Analyze this project and provide a summary of:
@@ -570,7 +658,11 @@ Format your response as a structured markdown document.`;
       }
 
       // Save analysis
-      const analysisPath = path.join(projectPath, ".automaker", "project-analysis.md");
+      const analysisPath = path.join(
+        projectPath,
+        ".automaker",
+        "project-analysis.md"
+      );
       await fs.mkdir(path.dirname(analysisPath), { recursive: true });
       await fs.writeFile(analysisPath, analysisResult);
 
@@ -664,7 +756,10 @@ Format your response as a structured markdown document.`;
     return worktreePath;
   }
 
-  private async loadFeature(projectPath: string, featureId: string): Promise<Feature | null> {
+  private async loadFeature(
+    projectPath: string,
+    featureId: string
+  ): Promise<Feature | null> {
     const featurePath = path.join(
       projectPath,
       ".automaker",
@@ -699,12 +794,13 @@ Format your response as a structured markdown document.`;
       const feature = JSON.parse(data);
       feature.status = status;
       feature.updatedAt = new Date().toISOString();
-      // Set justFinished flag when moving to waiting_approval (agent just completed)
+      // Set justFinishedAt timestamp when moving to waiting_approval (agent just completed)
+      // Badge will show for 2 minutes after this timestamp
       if (status === "waiting_approval") {
-        feature.justFinished = true;
+        feature.justFinishedAt = new Date().toISOString();
       } else {
-        // Clear the flag when moving to other statuses
-        feature.justFinished = false;
+        // Clear the timestamp when moving to other statuses
+        feature.justFinishedAt = undefined;
       }
       await fs.writeFile(featurePath, JSON.stringify(feature, null, 2));
     } catch {
@@ -721,7 +817,11 @@ Format your response as a structured markdown document.`;
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const featurePath = path.join(featuresDir, entry.name, "feature.json");
+          const featurePath = path.join(
+            featuresDir,
+            entry.name,
+            "feature.json"
+          );
           try {
             const data = await fs.readFile(featurePath, "utf-8");
             const feature = JSON.parse(data);
@@ -782,14 +882,7 @@ When done, summarize what you implemented and any notes for the developer.`;
       model: "claude-opus-4-5-20251101",
       maxTurns: 50,
       cwd: workDir,
-      allowedTools: [
-        "Read",
-        "Write",
-        "Edit",
-        "Glob",
-        "Grep",
-        "Bash",
-      ],
+      allowedTools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"],
       permissionMode: "acceptEdits",
       sandbox: {
         enabled: true,
@@ -802,12 +895,20 @@ When done, summarize what you implemented and any notes for the developer.`;
     let finalPrompt = prompt;
 
     if (imagePaths && imagePaths.length > 0) {
-      finalPrompt = `${prompt}\n\n## Reference Images\nThe following images are available for reference. Use the Read tool to view them:\n${imagePaths.map((p) => `- ${p}`).join("\n")}`;
+      finalPrompt = `${prompt}\n\n## Reference Images\nThe following images are available for reference. Use the Read tool to view them:\n${imagePaths
+        .map((p) => `- ${p}`)
+        .join("\n")}`;
     }
 
     const stream = query({ prompt: finalPrompt, options });
     let responseText = "";
-    const outputPath = path.join(workDir, ".automaker", "features", featureId, "agent-output.md");
+    const outputPath = path.join(
+      workDir,
+      ".automaker",
+      "features",
+      featureId,
+      "agent-output.md"
+    );
 
     for await (const msg of stream) {
       if (msg.type === "assistant" && msg.message.content) {
@@ -816,12 +917,14 @@ When done, summarize what you implemented and any notes for the developer.`;
             responseText = block.text;
 
             // Check for authentication errors in the response
-            if (block.text.includes("Invalid API key") ||
-                block.text.includes("authentication_failed") ||
-                block.text.includes("Fix external API key")) {
+            if (
+              block.text.includes("Invalid API key") ||
+              block.text.includes("authentication_failed") ||
+              block.text.includes("Fix external API key")
+            ) {
               throw new Error(
                 "Authentication failed: Invalid or expired API key. " +
-                "Please check your ANTHROPIC_API_KEY or run 'claude login' to re-authenticate."
+                  "Please check your ANTHROPIC_API_KEY or run 'claude login' to re-authenticate."
               );
             }
 
@@ -837,18 +940,21 @@ When done, summarize what you implemented and any notes for the developer.`;
             });
           }
         }
-      } else if (msg.type === "assistant" && (msg as { error?: string }).error === "authentication_failed") {
+      } else if (
+        msg.type === "assistant" &&
+        (msg as { error?: string }).error === "authentication_failed"
+      ) {
         // Handle authentication error from the SDK
         throw new Error(
           "Authentication failed: Invalid or expired API key. " +
-          "Please set a valid ANTHROPIC_API_KEY environment variable or run 'claude login' to authenticate."
+            "Please set a valid ANTHROPIC_API_KEY environment variable or run 'claude login' to authenticate."
         );
       } else if (msg.type === "result" && msg.subtype === "success") {
         // Check if result indicates an error
         if (msg.is_error && msg.result?.includes("Invalid API key")) {
           throw new Error(
             "Authentication failed: Invalid or expired API key. " +
-            "Please set a valid ANTHROPIC_API_KEY environment variable or run 'claude login' to authenticate."
+              "Please set a valid ANTHROPIC_API_KEY environment variable or run 'claude login' to authenticate."
           );
         }
         responseText = msg.result || responseText;

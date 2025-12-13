@@ -316,6 +316,26 @@ export class HttpApiClient implements ElectronAPI {
     return this.post("/api/fs/save-image", { data, filename, mimeType, projectPath });
   }
 
+  async saveBoardBackground(
+    data: string,
+    filename: string,
+    mimeType: string,
+    projectPath: string
+  ): Promise<{ success: boolean; path?: string; error?: string }> {
+    return this.post("/api/fs/save-board-background", {
+      data,
+      filename,
+      mimeType,
+      projectPath,
+    });
+  }
+
+  async deleteBoardBackground(
+    projectPath: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.post("/api/fs/delete-board-background", { projectPath });
+  }
+
   // CLI checks - server-side
   async checkClaudeCli(): Promise<{
     success: boolean;
