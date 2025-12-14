@@ -27,7 +27,6 @@ import { createGitRoutes } from "./routes/git.js";
 import { createSetupRoutes } from "./routes/setup.js";
 import { createSuggestionsRoutes } from "./routes/suggestions.js";
 import { createModelsRoutes } from "./routes/models.js";
-import { createSpecRegenerationRoutes } from "./routes/spec-regeneration.js";
 import { createRunningAgentsRoutes } from "./routes/running-agents.js";
 import { createWorkspaceRoutes } from "./routes/workspace.js";
 import { createTemplatesRoutes } from "./routes/templates.js";
@@ -41,6 +40,7 @@ import { AgentService } from "./services/agent-service.js";
 import { FeatureLoader } from "./services/feature-loader.js";
 import { AutoModeService } from "./services/auto-mode-service.js";
 import { getTerminalService } from "./services/terminal-service.js";
+import { createSpecRegenerationRoutes } from "./routes/app-spec/index.js";
 
 // Load environment variables
 dotenv.config();
