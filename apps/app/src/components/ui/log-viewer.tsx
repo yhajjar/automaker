@@ -22,6 +22,9 @@ import {
   Layers,
   X,
   Filter,
+  Circle,
+  Play,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -111,6 +114,112 @@ const getToolCategoryColor = (category: ToolCategory | undefined): string => {
   }
 };
 
+/**
+ * Interface for parsed todo items from TodoWrite tool
+ */
+interface TodoItem {
+  content: string;
+  status: "pending" | "in_progress" | "completed";
+  activeForm?: string;
+}
+
+/**
+ * Parses TodoWrite JSON content and extracts todo items
+ */
+function parseTodoContent(content: string): TodoItem[] | null {
+  try {
+    // Find the JSON object in the content
+    const jsonMatch = content.match(/\{[\s\S]*"todos"[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]) as { todos?: TodoItem[] };
+    if (!parsed.todos || !Array.isArray(parsed.todos)) return null;
+
+    return parsed.todos;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Renders a list of todo items with status icons and colors
+ */
+function TodoListRenderer({ todos }: { todos: TodoItem[] }) {
+  const getStatusIcon = (status: TodoItem["status"]) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
+      case "in_progress":
+        return <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />;
+      case "pending":
+        return <Circle className="w-4 h-4 text-zinc-500" />;
+      default:
+        return <Circle className="w-4 h-4 text-zinc-500" />;
+    }
+  };
+
+  const getStatusColor = (status: TodoItem["status"]) => {
+    switch (status) {
+      case "completed":
+        return "text-emerald-300 line-through opacity-70";
+      case "in_progress":
+        return "text-amber-300";
+      case "pending":
+        return "text-zinc-400";
+      default:
+        return "text-zinc-400";
+    }
+  };
+
+  const getStatusBadge = (status: TodoItem["status"]) => {
+    switch (status) {
+      case "completed":
+        return (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 ml-auto">
+            Done
+          </span>
+        );
+      case "in_progress":
+        return (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-auto">
+            In Progress
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      {todos.map((todo, index) => (
+        <div
+          key={index}
+          className={cn(
+            "flex items-start gap-2 p-2 rounded-md transition-colors",
+            todo.status === "in_progress" && "bg-amber-500/5 border border-amber-500/20",
+            todo.status === "completed" && "bg-emerald-500/5",
+            todo.status === "pending" && "bg-zinc-800/30"
+          )}
+        >
+          <div className="mt-0.5 flex-shrink-0">{getStatusIcon(todo.status)}</div>
+          <div className="flex-1 min-w-0">
+            <p className={cn("text-sm", getStatusColor(todo.status))}>
+              {todo.content}
+            </p>
+            {todo.status === "in_progress" && todo.activeForm && (
+              <p className="text-xs text-amber-400/70 mt-0.5 italic">
+                {todo.activeForm}
+              </p>
+            )}
+          </div>
+          {getStatusBadge(todo.status)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface LogEntryItemProps {
   entry: LogEntry;
   isExpanded: boolean;
@@ -125,6 +234,13 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
   const isToolCall = entry.type === "tool_call";
   const toolCategory = entry.metadata?.toolCategory;
   const toolCategoryColors = isToolCall ? getToolCategoryColor(toolCategory) : "";
+
+  // Check if this is a TodoWrite entry and parse the todos
+  const isTodoWrite = entry.metadata?.toolName === "TodoWrite";
+  const parsedTodos = useMemo(() => {
+    if (!isTodoWrite) return null;
+    return parseTodoContent(entry.content);
+  }, [isTodoWrite, entry.content]);
 
   // Get the appropriate icon based on entry type and tool category
   const icon = isToolCall ? getToolCategoryIcon(toolCategory) : getLogIcon(entry.type);
@@ -256,26 +372,31 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
           className="px-4 pb-3 pt-1"
           data-testid={`log-entry-content-${entry.id}`}
         >
-          <div className="font-mono text-xs space-y-1">
-            {formattedContent.map((part, index) => (
-              <div key={index}>
-                {part.type === "json" ? (
-                  <pre className="bg-zinc-900/50 rounded p-2 overflow-x-auto text-xs text-primary">
-                    {part.content}
-                  </pre>
-                ) : (
-                  <pre
-                    className={cn(
-                      "whitespace-pre-wrap break-words",
-                      textColor
-                    )}
-                  >
-                    {part.content}
-                  </pre>
-                )}
-              </div>
-            ))}
-          </div>
+          {/* Render TodoWrite entries with special formatting */}
+          {parsedTodos ? (
+            <TodoListRenderer todos={parsedTodos} />
+          ) : (
+            <div className="font-mono text-xs space-y-1">
+              {formattedContent.map((part, index) => (
+                <div key={index}>
+                  {part.type === "json" ? (
+                    <pre className="bg-zinc-900/50 rounded p-2 overflow-x-auto text-xs text-primary">
+                      {part.content}
+                    </pre>
+                  ) : (
+                    <pre
+                      className={cn(
+                        "whitespace-pre-wrap break-words",
+                        textColor
+                      )}
+                    >
+                      {part.content}
+                    </pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

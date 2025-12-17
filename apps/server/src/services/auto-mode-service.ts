@@ -549,13 +549,15 @@ Address the follow-up instructions above. Review the previous work and make the 
       }
 
       // Use fullPrompt (already built above) with model and all images
+      // Pass previousContext so the history is preserved in the output file
       await this.runAgent(
         workDir,
         featureId,
         fullPrompt,
         abortController,
         allImagePaths.length > 0 ? allImagePaths : imagePaths,
-        model
+        model,
+        previousContext || undefined
       );
 
       // Mark as waiting_approval for user review
@@ -1169,7 +1171,8 @@ This helps parse your summary correctly in the output logs.`;
     prompt: string,
     abortController: AbortController,
     imagePaths?: string[],
-    model?: string
+    model?: string,
+    previousContent?: string
   ): Promise<void> {
     // CI/CD Mock Mode: Return early with mock response when AUTOMAKER_MOCK_AGENT is set
     // This prevents actual API calls during automated testing
@@ -1271,7 +1274,10 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
 
     // Execute via provider
     const stream = provider.executeQuery(options);
-    let responseText = "";
+    // Initialize with previous content if this is a follow-up, with a separator
+    let responseText = previousContent
+      ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
+      : "";
     // Agent output goes to .automaker directory
     // Note: We use the original projectPath here (from config), not workDir
     // because workDir might be a worktree path
