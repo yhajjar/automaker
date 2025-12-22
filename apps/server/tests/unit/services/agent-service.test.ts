@@ -4,11 +4,11 @@ import { ProviderFactory } from '@/providers/provider-factory.js';
 import * as fs from 'fs/promises';
 import * as imageHandler from '@automaker/utils';
 import * as promptBuilder from '@automaker/utils';
+import * as contextLoader from '@automaker/utils';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
 
 vi.mock('fs/promises');
 vi.mock('@/providers/provider-factory.js');
-vi.mock('@automaker/utils');
 vi.mock('@automaker/utils');
 
 describe('agent-service.ts', () => {
@@ -21,6 +21,12 @@ describe('agent-service.ts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new AgentService('/test/data', mockEvents as any);
+
+    // Mock loadContextFiles to return empty context by default
+    vi.mocked(contextLoader.loadContextFiles).mockResolvedValue({
+      files: [],
+      formattedPrompt: '',
+    });
   });
 
   describe('initialize', () => {

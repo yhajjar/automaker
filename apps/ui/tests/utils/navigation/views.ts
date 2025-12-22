@@ -24,6 +24,18 @@ export async function navigateToContext(page: Page): Promise<void> {
   await page.goto('/context');
   await page.waitForLoadState('networkidle');
 
+  // Wait for loading to complete (if present)
+  const loadingElement = page.locator('[data-testid="context-view-loading"]');
+  try {
+    const loadingVisible = await loadingElement.isVisible({ timeout: 2000 });
+    if (loadingVisible) {
+      // Wait for loading to disappear (context view will appear)
+      await loadingElement.waitFor({ state: 'hidden', timeout: 10000 });
+    }
+  } catch {
+    // Loading element not found or already hidden, continue
+  }
+
   // Wait for the context view to be visible
   await waitForElement(page, 'context-view', { timeout: 10000 });
 }
