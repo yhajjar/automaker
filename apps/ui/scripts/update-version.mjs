@@ -36,12 +36,11 @@ try {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   const oldVersion = packageJson.version;
   packageJson.version = cleanVersion;
-  
+
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
-  
+
   console.log(`Updated version from ${oldVersion} to ${cleanVersion}`);
 } catch (error) {
   console.error(`Error updating version: ${error.message}`);
   process.exit(1);
 }
-
