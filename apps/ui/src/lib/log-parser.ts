@@ -3,6 +3,14 @@
  * Parses agent output into structured sections for display
  */
 
+import type {
+  CursorStreamEvent,
+  CursorSystemEvent,
+  CursorAssistantEvent,
+  CursorToolCallEvent,
+  CursorResultEvent,
+} from '@automaker/types';
+
 export type LogEntryType =
   | 'prompt'
   | 'tool_call'
@@ -300,6 +308,244 @@ export function generateToolSummary(toolName: string, content: string): string |
   }
 }
 
+// ============================================================================
+// Cursor Event Parsing
+// ============================================================================
+
+/**
+ * Detect if a parsed JSON object is a Cursor stream event
+ */
+function isCursorEvent(obj: unknown): obj is CursorStreamEvent {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'type' in obj &&
+    'session_id' in obj &&
+    ['system', 'user', 'assistant', 'tool_call', 'result'].includes(
+      (obj as Record<string, unknown>).type as string
+    )
+  );
+}
+
+/**
+ * Normalize Cursor tool call event to log entry
+ */
+function normalizeCursorToolCall(
+  event: CursorToolCallEvent,
+  baseEntry: { id: string; timestamp: string }
+): LogEntry | null {
+  const toolCall = event.tool_call;
+  const isStarted = event.subtype === 'started';
+  const isCompleted = event.subtype === 'completed';
+
+  // Read tool
+  if (toolCall.readToolCall) {
+    const path = toolCall.readToolCall.args.path;
+    const result = toolCall.readToolCall.result?.success;
+
+    return {
+      ...baseEntry,
+      id: `${baseEntry.id}-${event.call_id}`,
+      type: 'tool_call' as LogEntryType,
+      title: isStarted ? `Reading ${path}` : `Read ${path}`,
+      content:
+        isCompleted && result
+          ? `${result.totalLines} lines, ${result.totalChars} chars`
+          : `Path: ${path}`,
+      collapsed: true,
+      metadata: {
+        toolName: 'Read',
+        toolCategory: 'read' as ToolCategory,
+        filePath: path,
+        summary: isCompleted ? `Read ${result?.totalLines || 0} lines` : `Reading file...`,
+      },
+    };
+  }
+
+  // Write tool
+  if (toolCall.writeToolCall) {
+    const path =
+      toolCall.writeToolCall.args?.path ||
+      toolCall.writeToolCall.result?.success?.path ||
+      'unknown';
+    const result = toolCall.writeToolCall.result?.success;
+
+    return {
+      ...baseEntry,
+      id: `${baseEntry.id}-${event.call_id}`,
+      type: 'tool_call' as LogEntryType,
+      title: isStarted ? `Writing ${path}` : `Wrote ${path}`,
+      content:
+        isCompleted && result
+          ? `${result.linesCreated} lines, ${result.fileSize} bytes`
+          : `Path: ${path}`,
+      collapsed: true,
+      metadata: {
+        toolName: 'Write',
+        toolCategory: 'write' as ToolCategory,
+        filePath: path,
+        summary: isCompleted ? `Wrote ${result?.linesCreated || 0} lines` : `Writing file...`,
+      },
+    };
+  }
+
+  // Generic function tool
+  if (toolCall.function) {
+    const name = toolCall.function.name;
+    const args = toolCall.function.arguments;
+
+    // Determine category based on tool name
+    const category = categorizeToolName(name);
+
+    return {
+      ...baseEntry,
+      id: `${baseEntry.id}-${event.call_id}`,
+      type: 'tool_call' as LogEntryType,
+      title: `${name} ${isStarted ? 'started' : 'completed'}`,
+      content: args || '',
+      collapsed: true,
+      metadata: {
+        toolName: name,
+        toolCategory: category,
+        summary: `${name} ${event.subtype}`,
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Normalize Cursor stream event to log entry
+ */
+export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null {
+  const timestamp = new Date().toISOString();
+  const baseEntry = {
+    id: `cursor-${event.session_id}-${Date.now()}`,
+    timestamp,
+  };
+
+  switch (event.type) {
+    case 'system': {
+      const sysEvent = event as CursorSystemEvent;
+      return {
+        ...baseEntry,
+        type: 'info' as LogEntryType,
+        title: 'Session Started',
+        content: `Model: ${sysEvent.model}\nAuth: ${sysEvent.apiKeySource}\nCWD: ${sysEvent.cwd}`,
+        collapsed: true,
+        metadata: {
+          phase: 'init',
+        },
+      };
+    }
+
+    case 'assistant': {
+      const assistEvent = event as CursorAssistantEvent;
+      const text = assistEvent.message.content
+        .filter((c) => c.type === 'text')
+        .map((c) => c.text)
+        .join('');
+
+      if (!text.trim()) return null;
+
+      return {
+        ...baseEntry,
+        type: 'info' as LogEntryType,
+        title: 'Assistant',
+        content: text,
+        collapsed: false,
+      };
+    }
+
+    case 'tool_call': {
+      const toolEvent = event as CursorToolCallEvent;
+      return normalizeCursorToolCall(toolEvent, baseEntry);
+    }
+
+    case 'result': {
+      const resultEvent = event as CursorResultEvent;
+
+      if (resultEvent.is_error) {
+        return {
+          ...baseEntry,
+          type: 'error' as LogEntryType,
+          title: 'Error',
+          content: resultEvent.error || resultEvent.result || 'Unknown error',
+          collapsed: false,
+        };
+      }
+
+      return {
+        ...baseEntry,
+        type: 'success' as LogEntryType,
+        title: 'Completed',
+        content: `Duration: ${resultEvent.duration_ms}ms`,
+        collapsed: true,
+      };
+    }
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * Parse a single log line into a structured entry
+ * Handles both Cursor JSON events and plain text
+ */
+export function parseLogLine(line: string): LogEntry | null {
+  if (!line.trim()) return null;
+
+  try {
+    const parsed = JSON.parse(line);
+
+    // Check if it's a Cursor stream event
+    if (isCursorEvent(parsed)) {
+      return normalizeCursorEvent(parsed);
+    }
+
+    // For other JSON, treat as debug info
+    return {
+      id: `json-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type: 'debug',
+      title: 'Debug Info',
+      content: line,
+      timestamp: new Date().toISOString(),
+      collapsed: true,
+    };
+  } catch {
+    // Non-JSON line - treat as plain text
+    return {
+      id: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type: 'info',
+      title: 'Output',
+      content: line,
+      timestamp: new Date().toISOString(),
+      collapsed: false,
+    };
+  }
+}
+
+/**
+ * Get provider-specific styling for log entries
+ */
+export function getProviderStyle(entry: LogEntry): { badge?: string; icon?: string } {
+  // Check if entry has Cursor session ID pattern
+  if (entry.id.startsWith('cursor-')) {
+    return {
+      badge: 'Cursor',
+      icon: 'terminal',
+    };
+  }
+
+  // Default (Claude/AutoMaker)
+  return {
+    badge: 'Claude',
+    icon: 'bot',
+  };
+}
+
 /**
  * Determines if an entry should be collapsed by default
  */
@@ -487,6 +733,26 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
     if (!trimmedLine && !currentEntry) {
       lineIndex++;
       continue;
+    }
+
+    // Check for Cursor stream events (NDJSON lines)
+    // These are complete JSON objects on a single line
+    if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmedLine);
+        if (isCursorEvent(parsed)) {
+          // Finalize any pending entry before adding Cursor event
+          finalizeEntry();
+          const cursorEntry = normalizeCursorEvent(parsed);
+          if (cursorEntry) {
+            entries.push(cursorEntry);
+          }
+          lineIndex++;
+          continue;
+        }
+      } catch {
+        // Not valid JSON, continue with normal parsing
+      }
     }
 
     // If we're in JSON accumulation mode, keep accumulating until depth returns to 0

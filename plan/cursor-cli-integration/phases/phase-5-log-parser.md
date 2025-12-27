@@ -1,6 +1,6 @@
 # Phase 5: Log Parser Integration
 
-**Status:** `pending`
+**Status:** `completed`
 **Dependencies:** Phase 2 (Provider), Phase 3 (Factory)
 **Estimated Effort:** Small (parser extension)
 
@@ -16,7 +16,7 @@ Update the log parser to recognize and normalize Cursor CLI stream events for di
 
 ### Task 5.1: Add Cursor Event Type Detection
 
-**Status:** `pending`
+**Status:** `completed`
 
 **File:** `apps/ui/src/lib/log-parser.ts`
 
@@ -216,7 +216,7 @@ function normalizeCursorToolCall(
 
 ### Task 5.2: Update parseLogLine Function
 
-**Status:** `pending`
+**Status:** `completed`
 
 **File:** `apps/ui/src/lib/log-parser.ts`
 
@@ -255,7 +255,7 @@ export function parseLogLine(line: string): LogEntry | null {
 
 ### Task 5.3: Add Cursor-Specific Styling (Optional)
 
-**Status:** `pending`
+**Status:** `completed`
 
 **File:** `apps/ui/src/lib/log-parser.ts`
 
@@ -348,13 +348,13 @@ console.log('Parsed entries:', entries.length);
 
 Before marking this phase complete:
 
-- [ ] `isCursorEvent()` correctly identifies Cursor events
-- [ ] `normalizeCursorEvent()` handles all event types
-- [ ] Tool calls are categorized correctly
-- [ ] File paths extracted for Read/Write tools
-- [ ] Existing Claude event parsing not broken
-- [ ] Log viewer displays Cursor events correctly
-- [ ] No runtime errors with malformed events
+- [x] `isCursorEvent()` correctly identifies Cursor events
+- [x] `normalizeCursorEvent()` handles all event types
+- [x] Tool calls are categorized correctly
+- [x] File paths extracted for Read/Write tools
+- [x] Existing Claude event parsing not broken
+- [x] Log viewer displays Cursor events correctly
+- [x] No runtime errors with malformed events
 
 ---
 
