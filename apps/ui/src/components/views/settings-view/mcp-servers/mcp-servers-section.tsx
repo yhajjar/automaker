@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ import {
   ChevronDown,
   ChevronRight,
   Code,
+  AlertTriangle,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -77,6 +78,51 @@ interface ServerTestState {
   connectionTime?: number;
 }
 
+// Patterns that indicate sensitive values in URLs or config
+const SENSITIVE_PARAM_PATTERNS = [
+  /api[-_]?key/i,
+  /api[-_]?token/i,
+  /auth/i,
+  /token/i,
+  /secret/i,
+  /password/i,
+  /credential/i,
+  /bearer/i,
+];
+
+/**
+ * Mask sensitive values in URLs (query params with key-like names)
+ */
+function maskSensitiveUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const params = new URLSearchParams(urlObj.search);
+    let hasSensitive = false;
+
+    for (const [key] of params.entries()) {
+      if (SENSITIVE_PARAM_PATTERNS.some((pattern) => pattern.test(key))) {
+        params.set(key, '***');
+        hasSensitive = true;
+      }
+    }
+
+    if (hasSensitive) {
+      urlObj.search = params.toString();
+      return urlObj.toString();
+    }
+    return url;
+  } catch {
+    // If URL parsing fails, try simple regex replacement for common patterns
+    return url.replace(
+      /([?&])(api[-_]?key|auth|token|secret|password|credential)=([^&]*)/gi,
+      '$1$2=***'
+    );
+  }
+}
+
+// Maximum recommended MCP tools before performance degradation
+const MAX_RECOMMENDED_TOOLS = 80;
+
 export function MCPServersSection() {
   const {
     mcpServers,
@@ -102,6 +148,22 @@ export function MCPServersSection() {
   const [isGlobalJsonEditOpen, setIsGlobalJsonEditOpen] = useState(false);
   const [globalJsonValue, setGlobalJsonValue] = useState('');
   const autoTestedServersRef = useRef<Set<string>>(new Set());
+
+  // Calculate total tools across all enabled servers
+  const totalToolsCount = useMemo(() => {
+    let count = 0;
+    for (const server of mcpServers) {
+      if (server.enabled !== false) {
+        const testState = serverTestStates[server.id];
+        if (testState?.status === 'success' && testState.tools) {
+          count += testState.tools.length;
+        }
+      }
+    }
+    return count;
+  }, [mcpServers, serverTestStates]);
+
+  const showToolsWarning = totalToolsCount > MAX_RECOMMENDED_TOOLS;
 
   // Auto-load MCP servers from settings file on mount
   useEffect(() => {
@@ -806,6 +868,24 @@ export function MCPServersSection() {
         </div>
       )}
 
+      {/* Tools Count Warning */}
+      {showToolsWarning && (
+        <div className="mx-6 mt-4 p-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-yellow-600 dark:text-yellow-400">
+                High tool count detected ({totalToolsCount} tools)
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Having more than {MAX_RECOMMENDED_TOOLS} MCP tools may degrade AI model performance.
+                Consider disabling unused servers or removing unnecessary tools.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Server List */}
       <div className="p-6">
         {mcpServers.length === 0 ? (
@@ -883,7 +963,7 @@ export function MCPServersSection() {
                               <div className="text-xs text-muted-foreground/60 mt-0.5 truncate">
                                 {server.type === 'stdio'
                                   ? `${server.command}${server.args?.length ? ' ' + server.args.join(' ') : ''}`
-                                  : server.url}
+                                  : maskSensitiveUrl(server.url || '')}
                               </div>
                               {testState?.status === 'error' && testState.error && (
                                 <div className="text-xs text-destructive mt-1 line-clamp-2 break-words">
