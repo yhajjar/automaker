@@ -11,6 +11,7 @@ import { createLogger } from '@automaker/utils';
 import { DEFAULT_PHASE_MODELS, isCursorModel } from '@automaker/types';
 import { resolveModelString } from '@automaker/model-resolver';
 import { createSuggestionsOptions } from '../../lib/sdk-options.js';
+import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import { getAppSpecPath } from '@automaker/platform';
@@ -289,9 +290,13 @@ ${JSON.stringify(suggestionsSchema, null, 2)}`;
         })),
       });
     } else {
-      // Fallback: try to parse from text using multiple strategies
+      // Fallback: try to parse from text using shared extraction utility
       logger.warn('No structured output received, attempting to parse from text');
-      const parsed = extractSuggestionsJson(responseText);
+      const parsed = extractJsonWithArray<{ suggestions: Array<Record<string, unknown>> }>(
+        responseText,
+        'suggestions',
+        { logger }
+      );
       if (parsed && parsed.suggestions) {
         events.emit('suggestions:event', {
           type: 'suggestions_complete',
@@ -321,100 +326,4 @@ ${JSON.stringify(suggestionsSchema, null, 2)}`;
       ],
     });
   }
-}
-
-/**
- * Extract suggestions JSON from response text using multiple strategies.
- * Handles various formats: markdown code blocks, raw JSON, etc.
- */
-function extractSuggestionsJson(
-  responseText: string
-): { suggestions: Array<Record<string, unknown>> } | null {
-  const strategies = [
-    // Strategy 1: JSON in ```json code block
-    () => {
-      const match = responseText.match(/```json\s*([\s\S]*?)```/);
-      if (match) {
-        return JSON.parse(match[1].trim());
-      }
-      return null;
-    },
-    // Strategy 2: JSON in ``` code block (no language specified)
-    () => {
-      const match = responseText.match(/```\s*([\s\S]*?)```/);
-      if (match) {
-        const content = match[1].trim();
-        if (content.startsWith('{') && content.includes('"suggestions"')) {
-          return JSON.parse(content);
-        }
-      }
-      return null;
-    },
-    // Strategy 3: Find JSON object containing "suggestions" array
-    () => {
-      // Find the start of the JSON object
-      const startIdx = responseText.indexOf('{"suggestions"');
-      if (startIdx === -1) return null;
-
-      // Find matching closing brace by counting brackets
-      let depth = 0;
-      let endIdx = -1;
-      for (let i = startIdx; i < responseText.length; i++) {
-        if (responseText[i] === '{') depth++;
-        if (responseText[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            endIdx = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (endIdx > startIdx) {
-        return JSON.parse(responseText.slice(startIdx, endIdx));
-      }
-      return null;
-    },
-    // Strategy 4: Find any JSON object with suggestions
-    () => {
-      const startIdx = responseText.indexOf('{');
-      if (startIdx === -1) return null;
-
-      // Find matching closing brace
-      let depth = 0;
-      let endIdx = -1;
-      for (let i = startIdx; i < responseText.length; i++) {
-        if (responseText[i] === '{') depth++;
-        if (responseText[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            endIdx = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (endIdx > startIdx) {
-        const parsed = JSON.parse(responseText.slice(startIdx, endIdx));
-        if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
-          return parsed;
-        }
-      }
-      return null;
-    },
-  ];
-
-  for (const strategy of strategies) {
-    try {
-      const result = strategy();
-      if (result && result.suggestions && Array.isArray(result.suggestions)) {
-        logger.debug('Successfully extracted suggestions JSON');
-        return result;
-      }
-    } catch {
-      // Strategy failed, try next
-    }
-  }
-
-  return null;
 }
