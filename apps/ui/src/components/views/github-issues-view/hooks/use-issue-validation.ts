@@ -23,7 +23,7 @@ export function useIssueValidation({
   onValidationResultChange,
   onShowValidationDialogChange,
 }: UseIssueValidationOptions) {
-  const { currentProject, validationModel, muteDoneSound } = useAppStore();
+  const { currentProject, phaseModels, muteDoneSound } = useAppStore();
   const [validatingIssues, setValidatingIssues] = useState<Set<number>>(new Set());
   const [cachedValidations, setCachedValidations] = useState<Map<number, StoredValidation>>(
     new Map()
@@ -233,8 +233,8 @@ export function useIssueValidation({
         description: 'You will be notified when the analysis is complete',
       });
 
-      // Use provided model override or fall back to global validationModel
-      const modelToUse = model || validationModel;
+      // Use provided model override or fall back to phaseModels.validationModel
+      const modelToUse = model || phaseModels.validationModel;
 
       try {
         const api = getElectronAPI();
@@ -264,7 +264,7 @@ export function useIssueValidation({
       currentProject?.path,
       validatingIssues,
       cachedValidations,
-      validationModel,
+      phaseModels.validationModel,
       onValidationResultChange,
       onShowValidationDialogChange,
     ]
