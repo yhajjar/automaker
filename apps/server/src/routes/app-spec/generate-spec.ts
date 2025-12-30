@@ -1,5 +1,8 @@
 /**
  * Generate app_spec.txt from project overview
+ *
+ * Model is configurable via phaseModels.specGenerationModel in settings
+ * (defaults to Opus for high-quality specification generation).
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
@@ -13,6 +16,7 @@ import {
   type SpecOutput,
 } from '../../lib/app-spec-format.js';
 import { createLogger } from '@automaker/utils';
+import { DEFAULT_PHASE_MODELS } from '@automaker/types';
 import { createSpecGenerationOptions } from '../../lib/sdk-options.js';
 import { logAuthStatus } from './common.js';
 import { generateFeaturesFromSpec } from './generate-features-from-spec.js';
@@ -93,10 +97,18 @@ ${getStructuredSpecPromptInstruction()}`;
     '[SpecRegeneration]'
   );
 
+  // Get model from phase settings
+  const settings = await settingsService?.getGlobalSettings();
+  const specGenerationModel =
+    settings?.phaseModels?.specGenerationModel || DEFAULT_PHASE_MODELS.specGenerationModel;
+
+  logger.info('Using model:', specGenerationModel);
+
   const options = createSpecGenerationOptions({
     cwd: projectPath,
     abortController,
     autoLoadClaudeMd,
+    model: specGenerationModel,
     outputFormat: {
       type: 'json_schema',
       schema: specOutputSchema,
