@@ -1,8 +1,9 @@
 /**
  * POST /context/describe-file endpoint - Generate description for a text file
  *
- * Uses Claude Haiku to analyze a text file and generate a concise description
- * suitable for context file metadata.
+ * Uses AI to analyze a text file and generate a concise description
+ * suitable for context file metadata. Model is configurable via
+ * phaseModels.fileDescriptionModel in settings (defaults to Haiku).
  *
  * SECURITY: This endpoint validates file paths against ALLOWED_ROOT_DIRECTORY
  * and reads file content directly (not via Claude's Read tool) to prevent
@@ -12,8 +13,9 @@
 import type { Request, Response } from 'express';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createLogger } from '@automaker/utils';
-import { CLAUDE_MODEL_MAP } from '@automaker/types';
+import { DEFAULT_PHASE_MODELS } from '@automaker/types';
 import { PathNotAllowedError } from '@automaker/platform';
+import { resolveModelString } from '@automaker/model-resolver';
 import { createCustomOptions } from '../../../lib/sdk-options.js';
 import * as secureFs from '../../../lib/secure-fs.js';
 import * as path from 'path';
@@ -177,11 +179,19 @@ File: ${fileName}${truncated ? ' (truncated)' : ''}`;
         '[DescribeFile]'
       );
 
+      // Get model from phase settings
+      const settings = await settingsService?.getGlobalSettings();
+      const fileDescriptionModel =
+        settings?.phaseModels?.fileDescriptionModel || DEFAULT_PHASE_MODELS.fileDescriptionModel;
+      const model = resolveModelString(fileDescriptionModel);
+
+      logger.debug(`[DescribeFile] Using model: ${model}`);
+
       // Use centralized SDK options with proper cwd validation
       // No tools needed since we're passing file content directly
       const sdkOptions = createCustomOptions({
         cwd,
-        model: CLAUDE_MODEL_MAP.haiku,
+        model,
         maxTurns: 1,
         allowedTools: [],
         autoLoadClaudeMd,
