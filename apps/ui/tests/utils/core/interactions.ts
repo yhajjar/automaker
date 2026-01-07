@@ -1,5 +1,6 @@
 import { Page, expect } from '@playwright/test';
 import { getByTestId, getButtonByText } from './elements';
+import { waitForSplashScreenToDisappear } from './waiting';
 
 /**
  * Get the platform-specific modifier key (Meta for Mac, Control for Windows/Linux)
@@ -21,6 +22,8 @@ export async function pressModifierEnter(page: Page): Promise<void> {
  * Click an element by its data-testid attribute
  */
 export async function clickElement(page: Page, testId: string): Promise<void> {
+  // Wait for splash screen to disappear first (safety net)
+  await waitForSplashScreenToDisappear(page, 2000);
   const element = await getByTestId(page, testId);
   await element.click();
 }
