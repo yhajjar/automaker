@@ -3,7 +3,7 @@
  */
 
 import type { Request, Response } from 'express';
-import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import { createLogger } from '@automaker/utils';
 import { getErrorMessage, logError } from '../common.js';
 import { CursorProvider } from '../../../providers/cursor-provider.js';
@@ -18,7 +18,7 @@ const INITIAL_OUTPUT_TIMEOUT_MS = 2000;
 const MAX_CAPTURED_OUTPUT = 12000;
 
 interface LoginSession {
-  process: ChildProcessWithoutNullStreams;
+  process: ChildProcess;
   provider: CliLoginProvider;
   output: string;
   startedAt: number;
