@@ -1388,6 +1388,18 @@ export class HttpApiClient implements ElectronAPI {
       authenticated: boolean;
       error?: string;
     }> => this.post('/api/setup/verify-codex-auth', { authMethod, apiKey }),
+    startCliLogin: (
+      provider: 'claude' | 'codex' | 'cursor'
+    ): Promise<{
+      success: boolean;
+      sessionId?: string;
+      provider?: string;
+      verificationUrl?: string;
+      userCode?: string;
+      command?: string;
+      output?: string;
+      error?: string;
+    }> => this.post('/api/setup/cli-login/start', { provider }),
 
     // OpenCode CLI methods
     getOpencodeStatus: (): Promise<{

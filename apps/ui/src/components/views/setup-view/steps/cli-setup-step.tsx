@@ -61,6 +61,7 @@ interface CliSetupConfig {
     windows: string;
   };
   cliLoginCommand: string;
+  cliLoginProvider?: 'claude' | 'codex' | 'cursor';
   testIds: {
     installButton: string;
     verifyCliButton: string;
@@ -113,6 +114,13 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
   const [cliVerificationStatus, setCliVerificationStatus] = useState<VerificationStatus>('idle');
   const [cliVerificationError, setCliVerificationError] = useState<string | null>(null);
+  const [cliLoginInfo, setCliLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
+  const [isStartingCliLogin, setIsStartingCliLogin] = useState(false);
 
   const [apiKeyVerificationStatus, setApiKeyVerificationStatus] =
     useState<VerificationStatus>('idle');
@@ -276,6 +284,42 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
     toast.success('Command copied to clipboard');
   };
 
+  const startCliLogin = useCallback(async () => {
+    if (!config.cliLoginProvider) {
+      toast.error('CLI login is not available for this provider');
+      return;
+    }
+
+    setIsStartingCliLogin(true);
+    setCliLoginInfo(null);
+
+    try {
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        return;
+      }
+
+      const result = await api.setup.startCliLogin(config.cliLoginProvider);
+      if (result.success) {
+        setCliLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start login';
+      toast.error(errorMessage);
+    } finally {
+      setIsStartingCliLogin(false);
+    }
+  }, [config.cliLoginProvider]);
+
   const hasApiKey =
     !!(apiKeys as ApiKeys)[config.apiKeyProvider] ||
     authStatus?.method === 'api_key' ||
@@ -423,6 +467,101 @@ export function CliSetupStep({ config, state, onNext, onBack, onSkip }: CliSetup
 
                 {cliStatus?.installed && cliStatus?.version && (
                   <p className="text-sm text-muted-foreground">Version: {cliStatus.version}</p>
+                )}
+
+                {cliStatus?.installed && config.cliLoginProvider && (
+                  <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-sm text-muted-foreground">
+                      Start browser login to authenticate this CLI. If you already started, use
+                      Refresh/Verify after completing.
+                    </p>
+                    <Button
+                      onClick={startCliLogin}
+                      disabled={isStartingCliLogin}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {isStartingCliLogin ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Starting login...
+                        </>
+                      ) : (
+                        'Start CLI Login'
+                      )}
+                    </Button>
+
+                    {cliLoginInfo && (
+                      <div className="space-y-3">
+                        {cliLoginInfo.verificationUrl && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Open this URL in your browser:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                                {cliLoginInfo.verificationUrl}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(cliLoginInfo.verificationUrl, '_blank')}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {cliLoginInfo.userCode && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">Enter this code:</p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {cliLoginInfo.userCode}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(cliLoginInfo.userCode || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {!cliLoginInfo.verificationUrl && cliLoginInfo.command && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Run this command in a terminal:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {cliLoginInfo.command}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(cliLoginInfo.command || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {cliLoginInfo.output && (
+                          <details className="text-xs text-muted-foreground">
+                            <summary className="cursor-pointer">Show CLI output</summary>
+                            <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                              {cliLoginInfo.output}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {cliVerificationStatus === 'verifying' && (

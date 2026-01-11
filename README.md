@@ -220,6 +220,23 @@ docker-compose logs -f
 docker-compose down
 ```
 
+##### Coolify Deployment
+
+Use the preconfigured Docker Compose file for Coolify:
+
+```bash
+# In Coolify, select this file for the Docker Compose source
+docker-compose.coolify.yml
+```
+
+Then set these environment variables in Coolify:
+
+- `ANTHROPIC_API_KEY`
+- `VITE_SERVER_URL` (public API URL)
+- `CORS_ORIGIN` (public UI URL)
+
+Full guide: [Coolify Deployment](./docs/coolify.md)
+
 ##### Configuration
 
 Create a `.env` file in the project root if using API key authentication:

@@ -54,6 +54,7 @@ export function CodexSetupStep({ onNext, onBack, onSkip }: CodexSetupStepProps) 
         windows: 'npm install -g @openai/codex',
       },
       cliLoginCommand: 'codex login',
+      cliLoginProvider: 'codex' as const,
       testIds: {
         installButton: 'install-codex-button',
         verifyCliButton: 'verify-codex-cli-button',

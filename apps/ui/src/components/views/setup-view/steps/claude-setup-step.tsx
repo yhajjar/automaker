@@ -64,6 +64,13 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
   // CLI Verification state
   const [cliVerificationStatus, setCliVerificationStatus] = useState<VerificationStatus>('idle');
   const [cliVerificationError, setCliVerificationError] = useState<string | null>(null);
+  const [cliLoginInfo, setCliLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
+  const [isStartingCliLogin, setIsStartingCliLogin] = useState(false);
 
   // API Key Verification state
   const [apiKeyVerificationStatus, setApiKeyVerificationStatus] =
@@ -263,6 +270,37 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
     toast.success('Command copied to clipboard');
   };
 
+  const startCliLogin = useCallback(async () => {
+    setIsStartingCliLogin(true);
+    setCliLoginInfo(null);
+
+    try {
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        return;
+      }
+
+      const result = await api.setup.startCliLogin('claude');
+      if (result.success) {
+        setCliLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start login';
+      toast.error(errorMessage);
+    } finally {
+      setIsStartingCliLogin(false);
+    }
+  }, []);
+
   // User is ready if either method is verified
   const hasApiKey =
     !!apiKeys.anthropic ||
@@ -430,6 +468,101 @@ export function ClaudeSetupStep({ onNext, onBack, onSkip }: ClaudeSetupStepProps
                   <p className="text-sm text-muted-foreground">
                     Version: {claudeCliStatus.version}
                   </p>
+                )}
+
+                {claudeCliStatus?.installed && (
+                  <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-sm text-muted-foreground">
+                      Start browser login to authenticate Claude CLI. After completing, use Verify
+                      to confirm.
+                    </p>
+                    <Button
+                      onClick={startCliLogin}
+                      disabled={isStartingCliLogin}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {isStartingCliLogin ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Starting login...
+                        </>
+                      ) : (
+                        'Start CLI Login'
+                      )}
+                    </Button>
+
+                    {cliLoginInfo && (
+                      <div className="space-y-3">
+                        {cliLoginInfo.verificationUrl && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Open this URL in your browser:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                                {cliLoginInfo.verificationUrl}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(cliLoginInfo.verificationUrl, '_blank')}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {cliLoginInfo.userCode && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">Enter this code:</p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {cliLoginInfo.userCode}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(cliLoginInfo.userCode || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {!cliLoginInfo.verificationUrl && cliLoginInfo.command && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Run this command in a terminal:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {cliLoginInfo.command}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(cliLoginInfo.command || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {cliLoginInfo.output && (
+                          <details className="text-xs text-muted-foreground">
+                            <summary className="cursor-pointer">Show CLI output</summary>
+                            <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                              {cliLoginInfo.output}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* CLI Verification Status */}

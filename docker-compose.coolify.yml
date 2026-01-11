@@ -1,0 +1,64 @@
+# Automaker Docker Compose - Coolify Deployment
+# Two services: UI (nginx static) + API server.
+# Set VITE_SERVER_URL and CORS_ORIGIN in Coolify before building.
+
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ui
+      args:
+        # Public API URL (required at build time for the web UI)
+        - VITE_SERVER_URL=${VITE_SERVER_URL}
+    restart: unless-stopped
+    depends_on:
+      - server
+    expose:
+      - "80"
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+    restart: unless-stopped
+    environment:
+      # Required
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # Optional - additional model providers
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CURSOR_API_KEY=${CURSOR_API_KEY:-}
+
+      # Optional - OAuth credentials for CLI auth
+      - CLAUDE_OAUTH_CREDENTIALS=${CLAUDE_OAUTH_CREDENTIALS:-}
+      - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
+
+      # Optional - API auth
+      - AUTOMAKER_API_KEY=${AUTOMAKER_API_KEY:-}
+
+      # Optional - restrict file operations within container
+      - ALLOWED_ROOT_DIRECTORY=${ALLOWED_ROOT_DIRECTORY:-/projects}
+
+      # Required for browser access in production (comma-separated allowed origins)
+      - CORS_ORIGIN=${CORS_ORIGIN}
+
+      # Internal / defaults
+      - PORT=3008
+      - DATA_DIR=/data
+      - IS_CONTAINERIZED=true
+    volumes:
+      - automaker-data:/data
+      - automaker-claude-config:/home/automaker/.claude
+      - automaker-cursor-config:/home/automaker/.cursor
+    expose:
+      - "3008"
+
+volumes:
+  automaker-data:
+    name: automaker-data
+  automaker-claude-config:
+    name: automaker-claude-config
+  automaker-cursor-config:
+    name: automaker-cursor-config

@@ -44,6 +44,12 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
   const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInfo, setLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
@@ -93,12 +99,30 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setLoginInfo(null);
 
     try {
-      // Copy login command to clipboard and show instructions
-      const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const result = await api.setup.startCliLogin('cursor');
+      if (result.success) {
+        setLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+        setIsLoggingIn(false);
+        return;
+      }
 
       // Poll for auth status
       let attempts = 0;
@@ -294,23 +318,9 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
 
               <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  Run the login command in your terminal, then complete authentication in your
-                  browser:
+                  Start browser login to authenticate with Cursor. After completing, this page will
+                  check for authentication.
                 </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                    {cursorCliStatus?.loginCommand || 'cursor-agent login'}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      copyCommand(cursorCliStatus?.loginCommand || 'cursor-agent login')
-                    }
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
                 <Button
                   onClick={handleLogin}
                   disabled={isLoggingIn}
@@ -322,9 +332,80 @@ export function CursorSetupStep({ onNext, onBack, onSkip }: CursorSetupStepProps
                       Waiting for login...
                     </>
                   ) : (
-                    'Copy Command & Wait for Login'
+                    'Start CLI Login'
                   )}
                 </Button>
+
+                {loginInfo && (
+                  <div className="space-y-3">
+                    {loginInfo.verificationUrl && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Open this URL in your browser:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                            {loginInfo.verificationUrl}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(loginInfo.verificationUrl, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.userCode && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Enter this code:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.userCode}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.userCode || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!loginInfo.verificationUrl && loginInfo.command && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Run this command in a terminal:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.command}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.command || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.output && (
+                      <details className="text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">Show CLI output</summary>
+                        <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                          {loginInfo.output}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

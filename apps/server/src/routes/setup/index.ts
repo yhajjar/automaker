@@ -24,6 +24,7 @@ import { createDeauthCursorHandler } from './routes/deauth-cursor.js';
 import { createAuthOpencodeHandler } from './routes/auth-opencode.js';
 import { createDeauthOpencodeHandler } from './routes/deauth-opencode.js';
 import { createOpencodeStatusHandler } from './routes/opencode-status.js';
+import { createCliLoginStartHandler } from './routes/cli-login-start.js';
 import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
@@ -49,6 +50,7 @@ export function createSetupRoutes(): Router {
   router.post('/verify-claude-auth', createVerifyClaudeAuthHandler());
   router.post('/verify-codex-auth', createVerifyCodexAuthHandler());
   router.get('/gh-status', createGhStatusHandler());
+  router.post('/cli-login/start', createCliLoginStartHandler());
 
   // Cursor CLI routes
   router.get('/cursor-status', createCursorStatusHandler());
