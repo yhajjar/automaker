@@ -119,10 +119,14 @@ export function createCliLoginStartHandler() {
       logger.info(`[Setup] Starting ${provider} login via: ${command} ${args.join(' ')}`);
 
       const usePty = provider === 'claude';
+      const ptyEnv = {
+        ...env,
+        TERM: 'xterm-256color',
+      };
       const child = usePty
         ? pty.spawn(command, args, {
             cwd: process.cwd(),
-            env,
+            env: ptyEnv,
             name: 'xterm-256color',
             cols: 80,
             rows: 24,
@@ -200,6 +204,13 @@ export function createCliLoginStartHandler() {
 
       if (usePty) {
         child.onData((data: string) => handleData(Buffer.from(data)));
+        setTimeout(() => {
+          try {
+            child.write('\n');
+          } catch {
+            // Ignore write errors
+          }
+        }, 200);
         child.onExit(({ exitCode }) => {
           if (!resolved) {
             res.json({
