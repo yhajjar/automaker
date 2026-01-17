@@ -61,6 +61,13 @@ function ClaudeContent() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
+  const [isStartingLogin, setIsStartingLogin] = useState(false);
+  const [loginInfo, setLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
   const hasVerifiedRef = useRef(false);
 
   const installApi = useCallback(
@@ -215,6 +222,35 @@ function ClaudeContent() {
     navigator.clipboard.writeText(command);
     toast.success('Command copied to clipboard');
   };
+
+  const startLogin = useCallback(async () => {
+    setIsStartingLogin(true);
+    setLoginInfo(null);
+    try {
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        return;
+      }
+      const result = await api.setup.startCliLogin('claude');
+      if (result.success) {
+        setLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start login';
+      toast.error(errorMessage);
+    } finally {
+      setIsStartingLogin(false);
+    }
+  }, []);
 
   const hasApiKey =
     !!apiKeys.anthropic ||
@@ -376,6 +412,99 @@ function ClaudeContent() {
                 </div>
               </div>
 
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <p className="text-sm text-muted-foreground">
+                  Start browser login to authenticate Claude CLI. After completing, refresh to
+                  verify.
+                </p>
+                <Button
+                  onClick={startLogin}
+                  disabled={isStartingLogin}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isStartingLogin ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Starting login...
+                    </>
+                  ) : (
+                    'Start CLI Login'
+                  )}
+                </Button>
+
+                {loginInfo && (
+                  <div className="space-y-3">
+                    {loginInfo.verificationUrl && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Open this URL in your browser:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                            {loginInfo.verificationUrl}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(loginInfo.verificationUrl, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.userCode && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Enter this code:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.userCode}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.userCode || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!loginInfo.verificationUrl && loginInfo.command && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Run this command in a terminal:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.command}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.command || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.output && (
+                      <details className="text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">Show CLI output</summary>
+                        <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                          {loginInfo.output}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* API Key alternative */}
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="api-key" className="border-border">
@@ -455,6 +584,12 @@ function CursorContent() {
   const { cursorCliStatus, setCursorCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInfo, setLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
@@ -498,9 +633,28 @@ function CursorContent() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      setLoginInfo(null);
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const result = await api.setup.startCliLogin('cursor');
+      if (result.success) {
+        setLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+        setIsLoggingIn(false);
+        return;
+      }
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -638,36 +792,95 @@ function CursorContent() {
                 </p>
               </div>
             </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {cursorCliStatus?.loginCommand || 'cursor-agent login'}
-                </code>
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <p className="text-sm text-muted-foreground">
+                  Start browser login to authenticate with Cursor. After completing, this page will
+                  check for authentication.
+                </p>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyCommand(cursorCliStatus?.loginCommand || 'cursor-agent login')}
+                  onClick={handleLogin}
+                  disabled={isLoggingIn}
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                 >
-                  <Copy className="w-4 h-4" />
+                  {isLoggingIn ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Waiting for login...
+                    </>
+                  ) : (
+                    'Start CLI Login'
+                  )}
                 </Button>
-              </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Waiting for login...
-                  </>
-                ) : (
-                  'Copy Command & Wait for Login'
+
+                {loginInfo && (
+                  <div className="space-y-3">
+                    {loginInfo.verificationUrl && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Open this URL in your browser:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                            {loginInfo.verificationUrl}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(loginInfo.verificationUrl, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.userCode && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Enter this code:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.userCode}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.userCode || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!loginInfo.verificationUrl && loginInfo.command && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Run this command in a terminal:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                            {loginInfo.command}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyCommand(loginInfo.command || '')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {loginInfo.output && (
+                      <details className="text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">Show CLI output</summary>
+                        <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                          {loginInfo.output}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
                 )}
-              </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
@@ -687,11 +900,17 @@ function CodexContent() {
   const { codexCliStatus, codexAuthStatus, setCodexCliStatus, setCodexAuthStatus } =
     useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
-  const [isChecking, setIsChecking] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isChecking, setIsChecking] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [loginInfo, setLoginInfo] = useState<{
+      verificationUrl?: string;
+      userCode?: string;
+      command?: string;
+      output?: string;
+    } | null>(null);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -755,14 +974,34 @@ function CodexContent() {
     }
   };
 
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      await navigator.clipboard.writeText('codex login');
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+    const handleLogin = async () => {
+      setIsLoggingIn(true);
+      try {
+        setLoginInfo(null);
+        const api = getElectronAPI();
+        if (!api.setup?.startCliLogin) {
+          toast.error('Login API not available');
+          setIsLoggingIn(false);
+          return;
+        }
 
-      let attempts = 0;
-      pollIntervalRef.current = setInterval(async () => {
+        const result = await api.setup.startCliLogin('codex');
+        if (result.success) {
+          setLoginInfo({
+            verificationUrl: result.verificationUrl,
+            userCode: result.userCode,
+            command: result.command,
+            output: result.output,
+          });
+          toast.success('Login started. Complete authentication in your browser.');
+        } else {
+          toast.error(result.error || 'Failed to start login');
+          setIsLoggingIn(false);
+          return;
+        }
+
+        let attempts = 0;
+        pollIntervalRef.current = setInterval(async () => {
         attempts++;
         try {
           const api = getElectronAPI();
@@ -892,38 +1131,105 @@ function CodexContent() {
             </div>
 
             <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="cli" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Codex CLI Login</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                      codex login
-                    </code>
-                    <Button variant="ghost" size="icon" onClick={() => copyCommand('codex login')}>
-                      <Copy className="w-4 h-4" />
+                <AccordionItem value="cli" className="border-border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Terminal className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">Codex CLI Login</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Start browser login to authenticate Codex CLI. After completing, this page will
+                      check for authentication.
+                    </p>
+                    <Button
+                      onClick={handleLogin}
+                      disabled={isLoggingIn}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                    >
+                      {isLoggingIn ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Waiting for login...
+                        </>
+                      ) : (
+                        'Start CLI Login'
+                      )}
                     </Button>
-                  </div>
-                  <Button
-                    onClick={handleLogin}
-                    disabled={isLoggingIn}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isLoggingIn ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Waiting for login...
-                      </>
-                    ) : (
-                      'Copy Command & Wait for Login'
+
+                    {loginInfo && (
+                      <div className="space-y-3">
+                        {loginInfo.verificationUrl && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Open this URL in your browser:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                                {loginInfo.verificationUrl}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(loginInfo.verificationUrl, '_blank')}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {loginInfo.userCode && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">Enter this code:</p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {loginInfo.userCode}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(loginInfo.userCode || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {!loginInfo.verificationUrl && loginInfo.command && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Run this command in a terminal:
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                                {loginInfo.command}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyCommand(loginInfo.command || '')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {loginInfo.output && (
+                          <details className="text-xs text-muted-foreground">
+                            <summary className="cursor-pointer">Show CLI output</summary>
+                            <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                              {loginInfo.output}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
                     )}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
+                  </AccordionContent>
+                </AccordionItem>
 
               <AccordionItem value="api-key" className="border-border">
                 <AccordionTrigger className="hover:no-underline">
@@ -984,6 +1290,12 @@ function OpencodeContent() {
   const { opencodeCliStatus, setOpencodeCliStatus } = useSetupStore();
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInfo, setLoginInfo] = useState<{
+    verificationUrl?: string;
+    userCode?: string;
+    command?: string;
+    output?: string;
+  } | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkStatus = useCallback(async () => {
@@ -1027,9 +1339,28 @@ function OpencodeContent() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = opencodeCliStatus?.loginCommand || 'opencode auth login';
-      await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      setLoginInfo(null);
+      const api = getElectronAPI();
+      if (!api.setup?.startCliLogin) {
+        toast.error('Login API not available');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const result = await api.setup.startCliLogin('opencode');
+      if (result.success) {
+        setLoginInfo({
+          verificationUrl: result.verificationUrl,
+          userCode: result.userCode,
+          command: result.command,
+          output: result.output,
+        });
+        toast.success('Login started. Complete authentication in your browser.');
+      } else {
+        toast.error(result.error || 'Failed to start login');
+        setIsLoggingIn(false);
+        return;
+      }
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1165,25 +1496,11 @@ function OpencodeContent() {
               <div className="flex-1">
                 <p className="font-medium text-foreground">OpenCode CLI not authenticated</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command to authenticate.
+                  Start browser login to authenticate.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {opencodeCliStatus?.loginCommand || 'opencode auth login'}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    copyCommand(opencodeCliStatus?.loginCommand || 'opencode auth login')
-                  }
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
               <Button
                 onClick={handleLogin}
                 disabled={isLoggingIn}
@@ -1195,9 +1512,76 @@ function OpencodeContent() {
                     Waiting for login...
                   </>
                 ) : (
-                  'Copy Command & Wait for Login'
+                  'Start CLI Login'
                 )}
               </Button>
+
+              {loginInfo && (
+                <div className="space-y-3">
+                  {loginInfo.verificationUrl && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Open this URL in your browser:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground break-all">
+                          {loginInfo.verificationUrl}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(loginInfo.verificationUrl, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {loginInfo.userCode && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Enter this code:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                          {loginInfo.userCode}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyCommand(loginInfo.userCode || '')}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!loginInfo.verificationUrl && loginInfo.command && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Run this command in a terminal:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono text-foreground">
+                          {loginInfo.command}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyCommand(loginInfo.command || '')}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {loginInfo.output && (
+                    <details className="text-xs text-muted-foreground">
+                      <summary className="cursor-pointer">Show CLI output</summary>
+                      <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2">
+                        {loginInfo.output}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

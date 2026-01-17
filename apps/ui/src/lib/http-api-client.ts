@@ -1389,7 +1389,7 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.post('/api/setup/verify-codex-auth', { authMethod, apiKey }),
     startCliLogin: (
-      provider: 'claude' | 'codex' | 'cursor'
+      provider: 'claude' | 'codex' | 'cursor' | 'opencode'
     ): Promise<{
       success: boolean;
       sessionId?: string;

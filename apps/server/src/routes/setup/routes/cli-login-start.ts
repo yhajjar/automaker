@@ -11,7 +11,7 @@ import { findCodexCliPath } from '@automaker/platform';
 
 const logger = createLogger('Setup');
 
-type CliLoginProvider = 'claude' | 'codex' | 'cursor';
+type CliLoginProvider = 'claude' | 'codex' | 'cursor' | 'opencode';
 
 const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
 const INITIAL_OUTPUT_TIMEOUT_MS = 2000;
@@ -73,6 +73,14 @@ async function resolveCommand(provider: CliLoginProvider): Promise<{
     return { command: 'codex', args: ['login'], displayCommand: 'codex login' };
   }
 
+  if (provider === 'opencode') {
+    return {
+      command: 'opencode',
+      args: ['auth', 'login'],
+      displayCommand: 'opencode auth login',
+    };
+  }
+
   return { command: 'claude', args: ['login'], displayCommand: 'claude login' };
 }
 
@@ -80,10 +88,10 @@ export function createCliLoginStartHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     const { provider } = req.body as { provider?: CliLoginProvider };
 
-    if (!provider || !['claude', 'codex', 'cursor'].includes(provider)) {
+    if (!provider || !['claude', 'codex', 'cursor', 'opencode'].includes(provider)) {
       res.status(400).json({
         success: false,
-        error: 'Invalid provider. Expected one of: claude, codex, cursor.',
+        error: 'Invalid provider. Expected one of: claude, codex, cursor, opencode.',
       });
       return;
     }

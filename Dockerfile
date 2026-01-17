@@ -75,8 +75,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf gh.tar.gz gh_${GH_VERSION}_linux_${GH_ARCH} \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Claude CLI globally (available to all users via npm global bin)
-RUN npm install -g @anthropic-ai/claude-code
+# Install CLI providers globally (available to all users via npm global bin)
+RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai@latest
 
 # Create non-root user with home directory BEFORE installing Cursor CLI
 RUN groupadd -g 1001 automaker && \
