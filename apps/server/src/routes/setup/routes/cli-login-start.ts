@@ -45,14 +45,17 @@ function stripAnsi(text: string): string {
 }
 
 function parseLoginOutput(text: string): { verificationUrl?: string; userCode?: string } {
-  const urlMatch = text.match(/https?:\/\/[^\s"')>]+/);
-  const verificationUrl = urlMatch?.[0];
+  const verificationUrl =
+    text.match(/https?:\/\/[^\s"')>]+\/codex\/device/i)?.[0] ||
+    text.match(/https?:\/\/[^\s"')>]+\/device/i)?.[0] ||
+    text.match(/https?:\/\/[^\s"')>]+/)?.[0];
 
-  // Try to find a code near the word "code" or "device code"
-  const codeMatch =
-    text.match(/code[^A-Z0-9]*([A-Z0-9-]{6,})/i) ||
-    text.match(/([A-Z0-9]{4,}-[A-Z0-9]{4,})/);
-  const userCode = codeMatch?.[1];
+  const codeCandidates = [
+    ...text.matchAll(/\b[A-Z0-9]{4,}-[A-Z0-9]{4,}\b/g),
+    ...text.matchAll(/\b[A-Z0-9]{8,}\b/g),
+  ].map((m) => m[0]);
+
+  const userCode = codeCandidates.length > 0 ? codeCandidates[codeCandidates.length - 1] : undefined;
 
   return { verificationUrl, userCode };
 }
