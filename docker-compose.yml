@@ -72,6 +72,9 @@ services:
 
       # Claude CLI config directory (matches volume mount for credential detection)
       - CLAUDE_CONFIG_DIR=/home/automaker/.claude
+
+      # GitHub CLI config directory (for gh auth detection)
+      - GH_CONFIG_DIR=/home/automaker/.config/gh
     volumes:
       # ONLY named volumes - these are isolated from your host filesystem
       # This volume persists data between restarts but is container-managed
@@ -84,6 +87,10 @@ services:
       # Persist Cursor CLI configuration and authentication across container restarts
       # This allows 'cursor-agent login' authentication to persist between restarts
       - automaker-cursor-config:/home/automaker/.cursor
+
+      # Persist GitHub CLI configuration and authentication across container restarts
+      # This allows 'gh auth login' authentication to persist between restarts
+      - automaker-gh-config:/home/automaker/.config/gh
 
       # NO host directory mounts - container cannot access your laptop files
       # If you need to work on a project, create it INSIDE the container
@@ -108,3 +115,8 @@ volumes:
     name: automaker-cursor-config
     # Named volume for Cursor CLI configuration and authentication
     # Persists cursor-agent login authentication across container restarts
+
+  automaker-gh-config:
+    name: automaker-gh-config
+    # Named volume for GitHub CLI configuration and authentication
+    # Persists gh auth login authentication across container restarts

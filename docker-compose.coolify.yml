@@ -50,10 +50,13 @@ services:
       - IS_CONTAINERIZED=true
       # Claude CLI config directory (matches volume mount)
       - CLAUDE_CONFIG_DIR=/home/automaker/.claude
+      # GitHub CLI config directory
+      - GH_CONFIG_DIR=/home/automaker/.config/gh
     volumes:
       - automaker-data:/data
       - automaker-claude-config:/home/automaker/.claude
       - automaker-cursor-config:/home/automaker/.cursor
+      - automaker-gh-config:/home/automaker/.config/gh
     expose:
       - "3008"
 
@@ -64,3 +67,5 @@ volumes:
     name: automaker-claude-config
   automaker-cursor-config:
     name: automaker-cursor-config
+  automaker-gh-config:
+    name: automaker-gh-config

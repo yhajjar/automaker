@@ -10,9 +10,23 @@ import { getErrorMessage, logError } from '../common.js';
 
 const execAsync = promisify(exec);
 
+// GitHub CLI respects GH_CONFIG_DIR for its config location
+// Default is ~/.config/gh but in containers we need to set it explicitly
+function getGhConfigDir(): string {
+  if (process.env.GH_CONFIG_DIR) {
+    return process.env.GH_CONFIG_DIR;
+  }
+  // Default to ~/.config/gh
+  const os = require('os');
+  const path = require('path');
+  return path.join(os.homedir(), '.config', 'gh');
+}
+
 const execEnv = {
   ...process.env,
   PATH: getExtendedPath(),
+  // Ensure GH_CONFIG_DIR is set for containerized environments
+  GH_CONFIG_DIR: getGhConfigDir(),
 };
 
 export interface GhStatus {

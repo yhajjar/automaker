@@ -83,8 +83,10 @@ RUN groupadd -g 1001 automaker && \
     useradd -u 1001 -g automaker -m -d /home/automaker -s /bin/bash automaker && \
     mkdir -p /home/automaker/.local/bin && \
     mkdir -p /home/automaker/.cursor && \
+    mkdir -p /home/automaker/.config/gh && \
     chown -R automaker:automaker /home/automaker && \
-    chmod 700 /home/automaker/.cursor
+    chmod 700 /home/automaker/.cursor && \
+    chmod 700 /home/automaker/.config/gh
 
 # Install Cursor CLI as the automaker user
 # Set HOME explicitly and install to /home/automaker/.local/bin/
@@ -146,6 +148,8 @@ ENV DATA_DIR=/data
 ENV HOME=/home/automaker
 # Claude CLI config directory (for containerized deployments)
 ENV CLAUDE_CONFIG_DIR=/home/automaker/.claude
+# GitHub CLI config directory (for containerized deployments)
+ENV GH_CONFIG_DIR=/home/automaker/.config/gh
 # Add user's local bin to PATH for cursor-agent
 ENV PATH="/home/automaker/.local/bin:${PATH}"
 
