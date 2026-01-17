@@ -126,19 +126,29 @@ export function createCliLoginStartHandler() {
         ...env,
         TERM: 'xterm-256color',
       };
-      const child = usePty
-        ? pty.spawn(command, args, {
-            cwd: process.cwd(),
-            env: ptyEnv,
-            name: 'xterm-256color',
-            cols: 80,
-            rows: 24,
-          })
-        : spawn(command, args, {
-            cwd: process.cwd(),
-            env,
-            stdio: ['ignore', 'pipe', 'pipe'],
-          });
+
+      // Separate variables for proper TypeScript narrowing
+      let ptyChild: pty.IPty | null = null;
+      let spawnChild: ReturnType<typeof spawn> | null = null;
+
+      if (usePty) {
+        ptyChild = pty.spawn(command, args, {
+          cwd: process.cwd(),
+          env: ptyEnv,
+          name: 'xterm-256color',
+          cols: 80,
+          rows: 24,
+        });
+      } else {
+        spawnChild = spawn(command, args, {
+          cwd: process.cwd(),
+          env,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      }
+
+      // Common interface for both process types
+      const child = ptyChild || spawnChild!;
 
       let output = '';
       let resolved = false;
@@ -205,16 +215,16 @@ export function createCliLoginStartHandler() {
         }
       };
 
-      if (usePty) {
-        child.onData((data: string) => handleData(Buffer.from(data)));
+      if (ptyChild) {
+        ptyChild.onData((data: string) => handleData(Buffer.from(data)));
         setTimeout(() => {
           try {
-            child.write('\n');
+            ptyChild!.write('\n');
           } catch {
             // Ignore write errors
           }
         }, 200);
-        child.onExit(({ exitCode }) => {
+        ptyChild.onExit(({ exitCode }: { exitCode: number }) => {
           if (!resolved) {
             res.json({
               success: false,
@@ -227,11 +237,11 @@ export function createCliLoginStartHandler() {
           }
           cleanup();
         });
-      } else {
-        child.stdout.on('data', handleData);
-        child.stderr.on('data', handleData);
+      } else if (spawnChild) {
+        spawnChild.stdout!.on('data', handleData);
+        spawnChild.stderr!.on('data', handleData);
 
-        child.on('exit', (code) => {
+        spawnChild.on('exit', (code) => {
           if (!resolved) {
             res.json({
               success: false,
@@ -245,7 +255,7 @@ export function createCliLoginStartHandler() {
           cleanup();
         });
 
-        child.on('error', (error) => {
+        spawnChild.on('error', (error: Error) => {
           clearTimeout(initialOutputTimer);
           if (!resolved) {
             res.status(500).json({
