@@ -15,6 +15,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: ui
+      args:
+        # Build-time API base URL for the web UI (baked into static assets)
+        VITE_SERVER_URL: ${SERVICE_URL_SERVER:-http://localhost:3008}
     container_name: automaker-ui
     restart: unless-stopped
     ports:
@@ -60,6 +63,7 @@ services:
       - DATA_DIR=/data
 
       # Optional - CORS origin (default allows all)
+      # For web deployments, set CORS_ORIGIN to your UI URL (e.g. https://app.example.com)
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3007}
 
       # Internal - indicates the API is running in a containerized sandbox environment

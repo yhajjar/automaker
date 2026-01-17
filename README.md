@@ -376,6 +376,20 @@ npm run lint
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
 - `CORS_ORIGIN` - CORS policy (default: \*)
 
+#### Example .env (web deployment)
+
+```env
+# Public URLs
+SERVICE_URL_UI=https://automaker.example.com
+SERVICE_URL_SERVER=https://automaker-srv.example.com
+
+# Server CORS (must match your UI URL)
+CORS_ORIGIN=https://automaker.example.com
+
+# Optional server auth
+AUTOMAKER_API_KEY=your-generated-api-key
+```
+
 #### Optional - Development
 
 - `VITE_SKIP_ELECTRON` - Skip Electron in dev mode
