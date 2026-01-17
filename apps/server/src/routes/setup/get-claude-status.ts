@@ -4,10 +4,20 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { getClaudeCliPaths, getClaudeAuthIndicators, systemPathAccess } from '@automaker/platform';
+import {
+  getClaudeCliPaths,
+  getClaudeAuthIndicators,
+  systemPathAccess,
+  getClaudeConfigDir,
+  getClaudeCredentialPaths,
+} from '@automaker/platform';
 import { getApiKey } from './common.js';
+import { createLogger } from '@automaker/utils';
 import * as fs from 'fs';
 import * as path from 'path';
+import os from 'os';
+
+const logger = createLogger('ClaudeStatus');
 
 const execAsync = promisify(exec);
 
@@ -118,7 +128,19 @@ export async function getClaudeStatus() {
   };
 
   // Use centralized system paths to check Claude authentication indicators
+  // Log debug info for troubleshooting container environments
+  const homeDir = os.homedir();
+  const claudeConfigDir = getClaudeConfigDir();
+  const credentialPaths = getClaudeCredentialPaths();
+  logger.info(`[ClaudeStatus] CLAUDE_CONFIG_DIR env: ${process.env.CLAUDE_CONFIG_DIR || 'not set'}`);
+  logger.info(`[ClaudeStatus] Home directory: ${homeDir}`);
+  logger.info(`[ClaudeStatus] Claude config dir: ${claudeConfigDir}`);
+  logger.info(`[ClaudeStatus] Credential paths checked: ${credentialPaths.join(', ')}`);
+  logger.info(`[ClaudeStatus] HOME env: ${process.env.HOME || 'not set'}`);
+  logger.info(`[ClaudeStatus] USER env: ${process.env.USER || 'not set'}`);
+
   const indicators = await getClaudeAuthIndicators();
+  logger.info(`[ClaudeStatus] Auth indicators: ${JSON.stringify(indicators)}`);
 
   // Check for recent activity (indicates working authentication)
   if (indicators.hasStatsCacheWithActivity) {

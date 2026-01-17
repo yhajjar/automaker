@@ -144,6 +144,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENV PORT=3008
 ENV DATA_DIR=/data
 ENV HOME=/home/automaker
+# Claude CLI config directory (for containerized deployments)
+ENV CLAUDE_CONFIG_DIR=/home/automaker/.claude
 # Add user's local bin to PATH for cursor-agent
 ENV PATH="/home/automaker/.local/bin:${PATH}"
 

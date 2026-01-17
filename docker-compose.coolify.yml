@@ -48,6 +48,8 @@ services:
       - PORT=3008
       - DATA_DIR=/data
       - IS_CONTAINERIZED=true
+      # Claude CLI config directory (matches volume mount)
+      - CLAUDE_CONFIG_DIR=/home/automaker/.claude
     volumes:
       - automaker-data:/data
       - automaker-claude-config:/home/automaker/.claude

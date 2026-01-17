@@ -198,8 +198,14 @@ export function getCodexAuthPath(): string {
 
 /**
  * Get the Claude configuration directory path
+ * Respects CLAUDE_CONFIG_DIR environment variable if set (used in containers/dev environments)
  */
 export function getClaudeConfigDir(): string {
+  // Support CLAUDE_CONFIG_DIR environment variable for containerized deployments
+  // This matches Claude CLI's own behavior
+  if (process.env.CLAUDE_CONFIG_DIR) {
+    return process.env.CLAUDE_CONFIG_DIR;
+  }
   return path.join(os.homedir(), '.claude');
 }
 
@@ -906,43 +912,66 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
     credentials: null,
   };
 
+  // Log the paths being checked for debugging
+  const configDir = getClaudeConfigDir();
+  const settingsPath = getClaudeSettingsPath();
+  const statsCachePath = getClaudeStatsCachePath();
+  const projectsDir = getClaudeProjectsDir();
+  const credPaths = getClaudeCredentialPaths();
+
+  // Debug logging - using console since this is a low-level utility
+  const debug = process.env.DEBUG_CLAUDE_AUTH === 'true';
+  if (debug) {
+    console.log(`[ClaudeAuthIndicators] CLAUDE_CONFIG_DIR env: ${process.env.CLAUDE_CONFIG_DIR || 'not set'}`);
+    console.log(`[ClaudeAuthIndicators] Config dir: ${configDir}`);
+    console.log(`[ClaudeAuthIndicators] Settings path: ${settingsPath}`);
+    console.log(`[ClaudeAuthIndicators] Stats cache path: ${statsCachePath}`);
+    console.log(`[ClaudeAuthIndicators] Projects dir: ${projectsDir}`);
+    console.log(`[ClaudeAuthIndicators] Credential paths: ${credPaths.join(', ')}`);
+    console.log(`[ClaudeAuthIndicators] Home dir: ${os.homedir()}`);
+  }
+
   // Check settings file
   try {
-    if (await systemPathAccess(getClaudeSettingsPath())) {
+    if (await systemPathAccess(settingsPath)) {
       result.hasSettingsFile = true;
+      if (debug) console.log(`[ClaudeAuthIndicators] Found settings file`);
     }
-  } catch {
-    // Ignore errors
+  } catch (err) {
+    if (debug) console.log(`[ClaudeAuthIndicators] Settings file error: ${err}`);
   }
 
   // Check stats cache for recent activity
   try {
-    const statsContent = await systemPathReadFile(getClaudeStatsCachePath());
+    const statsContent = await systemPathReadFile(statsCachePath);
     const stats = JSON.parse(statsContent);
     if (stats.dailyActivity && stats.dailyActivity.length > 0) {
       result.hasStatsCacheWithActivity = true;
+      if (debug) console.log(`[ClaudeAuthIndicators] Found stats cache with activity`);
     }
-  } catch {
-    // Ignore errors
+  } catch (err) {
+    if (debug) console.log(`[ClaudeAuthIndicators] Stats cache error: ${err}`);
   }
 
   // Check for sessions in projects directory
   try {
-    const sessions = await systemPathReaddir(getClaudeProjectsDir());
+    const sessions = await systemPathReaddir(projectsDir);
     if (sessions.length > 0) {
       result.hasProjectsSessions = true;
+      if (debug) console.log(`[ClaudeAuthIndicators] Found ${sessions.length} project sessions`);
     }
-  } catch {
-    // Ignore errors
+  } catch (err) {
+    if (debug) console.log(`[ClaudeAuthIndicators] Projects dir error: ${err}`);
   }
 
   // Check credentials files
-  const credentialPaths = getClaudeCredentialPaths();
-  for (const credPath of credentialPaths) {
+  for (const credPath of credPaths) {
     try {
+      if (debug) console.log(`[ClaudeAuthIndicators] Checking credential path: ${credPath}`);
       const content = await systemPathReadFile(credPath);
       const credentials = JSON.parse(content);
       result.hasCredentialsFile = true;
+      if (debug) console.log(`[ClaudeAuthIndicators] Found credentials file at: ${credPath}`);
       // Support multiple credential formats:
       // 1. Claude Code CLI format: { claudeAiOauth: { accessToken, refreshToken } }
       // 2. Legacy format: { oauth_token } or { access_token }
@@ -953,9 +982,12 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
         hasOAuthToken: hasClaudeOauth || hasLegacyOauth,
         hasApiKey: !!credentials.api_key,
       };
+      if (debug) {
+        console.log(`[ClaudeAuthIndicators] Credentials: hasOAuth=${result.credentials.hasOAuthToken}, hasApiKey=${result.credentials.hasApiKey}`);
+      }
       break;
-    } catch {
-      // Continue to next path
+    } catch (err) {
+      if (debug) console.log(`[ClaudeAuthIndicators] Credential path ${credPath} error: ${err}`);
     }
   }
 

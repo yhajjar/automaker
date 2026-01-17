@@ -102,6 +102,14 @@ export function createVerifyClaudeAuthHandler() {
         `[Setup] Verifying Claude authentication using method: ${authMethod || 'auto'}${apiKey ? ' (with provided key)' : ''}`
       );
 
+      // Log environment info for debugging container issues
+      const os = await import('os');
+      const homeDir = os.homedir();
+      logger.info(`[Setup] Home directory: ${homeDir}`);
+      logger.info(`[Setup] HOME env: ${process.env.HOME || 'not set'}`);
+      logger.info(`[Setup] USER env: ${process.env.USER || 'not set'}`);
+      logger.info(`[Setup] ANTHROPIC_API_KEY env: ${process.env.ANTHROPIC_API_KEY ? 'set' : 'not set'}`);
+
       // Create an AbortController with a 30-second timeout
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), 30000);
