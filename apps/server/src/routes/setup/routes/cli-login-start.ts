@@ -19,7 +19,7 @@ const INITIAL_OUTPUT_TIMEOUT_MS = 2000;
 const MAX_CAPTURED_OUTPUT = 12000;
 
 interface LoginSession {
-  process: { kill: (signal?: NodeJS.Signals | number | string) => boolean | void };
+  process: pty.IPty | ChildProcess;
   provider: CliLoginProvider;
   output: string;
   startedAt: number;
@@ -147,9 +147,6 @@ export function createCliLoginStartHandler() {
         });
       }
 
-      // Common interface for both process types
-      const child = ptyChild || spawnChild!;
-
       let output = '';
       let resolved = false;
 
@@ -164,7 +161,11 @@ export function createCliLoginStartHandler() {
       const timeout = setTimeout(() => {
         logger.warn(`[Setup] Login session timed out: ${sessionId}`);
         try {
-          child.kill('SIGTERM');
+          if (ptyChild) {
+            ptyChild.kill();
+          } else if (spawnChild) {
+            spawnChild.kill('SIGTERM');
+          }
         } catch {
           // Ignore kill errors
         }
@@ -172,7 +173,7 @@ export function createCliLoginStartHandler() {
       }, LOGIN_TIMEOUT_MS);
 
       activeLoginSessions.set(sessionId, {
-        process: child,
+        process: ptyChild || spawnChild!,
         provider,
         output: '',
         startedAt: Date.now(),
