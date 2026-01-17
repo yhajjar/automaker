@@ -19,7 +19,7 @@ const INITIAL_OUTPUT_TIMEOUT_MS = 2000;
 const MAX_CAPTURED_OUTPUT = 12000;
 
 interface LoginSession {
-  process: ChildProcess | pty.IPty;
+  process: { kill: (signal?: NodeJS.Signals | number | string) => boolean | void };
   provider: CliLoginProvider;
   output: string;
   startedAt: number;
