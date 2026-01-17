@@ -4,6 +4,7 @@
 
 import type { Request, Response } from 'express';
 import { spawn, type ChildProcess } from 'child_process';
+import * as pty from 'node-pty';
 import { createLogger } from '@automaker/utils';
 import { getErrorMessage, logError } from '../common.js';
 import { CursorProvider } from '../../../providers/cursor-provider.js';
@@ -18,7 +19,7 @@ const INITIAL_OUTPUT_TIMEOUT_MS = 2000;
 const MAX_CAPTURED_OUTPUT = 12000;
 
 interface LoginSession {
-  process: ChildProcess;
+  process: { kill: (signal?: string) => void };
   provider: CliLoginProvider;
   output: string;
   startedAt: number;
@@ -33,6 +34,14 @@ function captureOutput(current: string, chunk: string): string {
     next = next.slice(next.length - MAX_CAPTURED_OUTPUT);
   }
   return next;
+}
+
+function stripAnsi(text: string): string {
+  return text.replace(
+    // eslint-disable-next-line no-control-regex
+    /\u001b\[[0-9;]*[A-Za-z]/g,
+    ''
+  );
 }
 
 function parseLoginOutput(text: string): { verificationUrl?: string; userCode?: string } {
@@ -109,11 +118,20 @@ export function createCliLoginStartHandler() {
 
       logger.info(`[Setup] Starting ${provider} login via: ${command} ${args.join(' ')}`);
 
-      const child = spawn(command, args, {
-        cwd: process.cwd(),
-        env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+      const usePty = provider === 'claude';
+      const child = usePty
+        ? pty.spawn(command, args, {
+            cwd: process.cwd(),
+            env,
+            name: 'xterm-256color',
+            cols: 80,
+            rows: 24,
+          })
+        : spawn(command, args, {
+            cwd: process.cwd(),
+            env,
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
 
       let output = '';
       let resolved = false;
@@ -144,10 +162,11 @@ export function createCliLoginStartHandler() {
         timeout,
       });
 
-      const maybeResolve = () => {
+      const maybeResolve = (force: boolean = false) => {
         if (resolved) return;
-        const { verificationUrl, userCode } = parseLoginOutput(output);
-        if (verificationUrl || userCode || output.length > 0) {
+        const cleanedOutput = stripAnsi(output);
+        const { verificationUrl, userCode } = parseLoginOutput(cleanedOutput);
+        if (verificationUrl || userCode || cleanedOutput.length > 0 || force) {
           resolved = true;
           res.json({
             success: true,
@@ -156,58 +175,76 @@ export function createCliLoginStartHandler() {
             verificationUrl,
             userCode,
             command: displayCommand,
-            output,
+            output: cleanedOutput,
           });
         }
       };
 
       const initialOutputTimer = setTimeout(() => {
-        maybeResolve();
+        maybeResolve(true);
       }, INITIAL_OUTPUT_TIMEOUT_MS);
 
       const handleData = (data: Buffer) => {
         output = captureOutput(output, data.toString());
+        const cleanedOutput = stripAnsi(output);
         const session = activeLoginSessions.get(sessionId);
         if (session) {
-          session.output = output;
+          session.output = cleanedOutput;
         }
-        const { verificationUrl, userCode } = parseLoginOutput(output);
+        const { verificationUrl, userCode } = parseLoginOutput(cleanedOutput);
         if (verificationUrl || userCode) {
           clearTimeout(initialOutputTimer);
           maybeResolve();
         }
       };
 
-      child.stdout.on('data', handleData);
-      child.stderr.on('data', handleData);
+      if (usePty) {
+        child.onData((data: string) => handleData(Buffer.from(data)));
+        child.onExit(({ exitCode }) => {
+          if (!resolved) {
+            res.json({
+              success: false,
+              sessionId,
+              provider,
+              error: `Login process exited with code ${exitCode ?? 'unknown'}`,
+              command: displayCommand,
+              output: stripAnsi(output),
+            });
+          }
+          cleanup();
+        });
+      } else {
+        child.stdout.on('data', handleData);
+        child.stderr.on('data', handleData);
 
-      child.on('exit', (code) => {
-        if (!resolved) {
-          res.json({
-            success: false,
-            sessionId,
-            provider,
-            error: `Login process exited with code ${code ?? 'unknown'}`,
-            command: displayCommand,
-            output,
-          });
-        }
-        cleanup();
-      });
+        child.on('exit', (code) => {
+          if (!resolved) {
+            res.json({
+              success: false,
+              sessionId,
+              provider,
+              error: `Login process exited with code ${code ?? 'unknown'}`,
+              command: displayCommand,
+              output: stripAnsi(output),
+            });
+          }
+          cleanup();
+        });
 
-      child.on('error', (error) => {
-        clearTimeout(initialOutputTimer);
-        if (!resolved) {
-          res.status(500).json({
-            success: false,
-            provider,
-            error: getErrorMessage(error),
-            command: displayCommand,
-            output,
-          });
-        }
-        cleanup();
-      });
+        child.on('error', (error) => {
+          clearTimeout(initialOutputTimer);
+          if (!resolved) {
+            res.status(500).json({
+              success: false,
+              provider,
+              error: getErrorMessage(error),
+              command: displayCommand,
+              output: stripAnsi(output),
+            });
+          }
+          cleanup();
+        });
+      }
     } catch (error) {
       logError(error, 'Start CLI login failed');
       res.status(500).json({

@@ -73,7 +73,9 @@ export async function checkCodexAuthentication(
 
     // Check both stdout and stderr for "logged in" - Codex CLI outputs to stderr
     const combinedOutput = (result.stdout + result.stderr).toLowerCase();
-    const isLoggedIn = combinedOutput.includes('logged in');
+    const isNotLoggedIn =
+      combinedOutput.includes('not logged in') || combinedOutput.includes('not logged-in');
+    const isLoggedIn = combinedOutput.includes('logged in') && !isNotLoggedIn;
     console.log('[CodexAuth] isLoggedIn (contains "logged in" in stdout or stderr):', isLoggedIn);
 
     if (result.exitCode === 0 && isLoggedIn) {
